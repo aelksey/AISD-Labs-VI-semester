@@ -115,8 +115,10 @@ public:
 Сборка проекта
 
 ```
-mkdir build && cd build
-cmake .. && make
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 Запустить демонстрационную программу-меню
@@ -154,3 +156,12 @@ sudo cp lib/*.a /usr/lib
 
 #### ОС Windows
 
+Установка Cmake:
+
+https://terminalroot.com/how-to-install-cmake-on-windows/
+
+При установке выбрать "Add to path for all users"
+
+Установка gtest:
+
+https://gist.github.com/motchy869/22d873415722a1c10bc77d3f761339dc#file-setup-googletest-on-windows-md

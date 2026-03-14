@@ -1,0 +1,149 @@
+#include <iostream>
+#include <string>
+#include <limits>
+#include "circular_list.h"
+
+using namespace std;
+
+template <typename T>
+void showMenu(CircularList<T>& list) {
+    int choice;
+    T value;
+    int pos;
+
+    do {
+        cout << "\n========== МЕНЮ ОПЕРАЦИЙ СО СПИСКОМ ==========" << endl;
+        cout << "1. Вывести список на экран" << endl;
+        cout << "2. Получить размер списка" << endl;
+        cout << "3. Проверить, пуст ли список" << endl;
+        cout << "4. Добавить элемент в конец (push_back)" << endl;
+        cout << "5. Вставить элемент по позиции (insert)" << endl;
+        cout << "6. Прочитать элемент по позиции (at)" << endl;
+        cout << "7. Изменить элемент по позиции (set)" << endl;
+        cout << "8. Найти позицию элемента по значению (indexOf)" << endl;
+        cout << "9. Проверить наличие значения (contains)" << endl;
+        cout << "10. Удалить элемент по значению (remove_value)" << endl;
+        cout << "11. Удалить элемент по позиции (remove_at)" << endl;
+        cout << "12. Очистить список (clear)" << endl;
+        cout << "13. Продемонстрировать итератор" << endl;
+        cout << "0. Выход" << endl;
+        cout << "================================================" << endl;
+        cout << "Ваш выбор: ";
+
+        while (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Неверный ввод. Пожалуйста, введите число: ";
+        }
+
+        try {
+            switch (choice) {
+                case 1:
+                    list.print();
+                    break;
+                case 2:
+                    cout << "Размер списка: " << list.size() << endl;
+                    break;
+                case 3:
+                    cout << (list.empty() ? "Список пуст." : "Список не пуст.") << endl;
+                    break;
+                case 4:
+                    cout << "Введите значение для добавления в конец: ";
+                    cin >> value;
+                    list.push_back(value);
+                    cout << "Элемент добавлен." << endl;
+                    list.print();
+                    break;
+                case 5:
+                    cout << "Введите позицию для вставки (начиная с 0): ";
+                    cin >> pos;
+                    cout << "Введите значение: ";
+                    cin >> value;
+                    list.insert(pos, value);
+                    cout << "Элемент вставлен." << endl;
+                    list.print();
+                    break;
+                case 6:
+                    cout << "Введите позицию для чтения: ";
+                    cin >> pos;
+                    cout << "Значение на позиции " << pos << ": " << list.at(pos) << endl;
+                    break;
+                case 7:
+                    cout << "Введите позицию для изменения: ";
+                    cin >> pos;
+                    cout << "Введите новое значение: ";
+                    cin >> value;
+                    list.set(pos, value);
+                    cout << "Значение изменено." << endl;
+                    list.print();
+                    break;
+                case 8:
+                    cout << "Введите значение для поиска: ";
+                    cin >> value;
+                    pos = list.indexOf(value);
+                    if (pos != -1)
+                        cout << "Первое вхождение значения на позиции: " << pos << endl;
+                    else
+                        cout << "Значение не найдено." << endl;
+                    break;
+                case 9:
+                    cout << "Введите значение для проверки: ";
+                    cin >> value;
+                    cout << (list.contains(value) ? "Значение найдено." : "Значение не найдено.") << endl;
+                    break;
+                case 10:
+                    cout << "Введите значение для удаления: ";
+                    cin >> value;
+                    if (list.remove_value(value))
+                        cout << "Значение удалено." << endl;
+                    else
+                        cout << "Значение не найдено." << endl;
+                    list.print();
+                    break;
+                case 11:
+                    cout << "Введите позицию для удаления: ";
+                    cin >> pos;
+                    if (list.remove_at(pos))
+                        cout << "Элемент удален." << endl;
+                    else
+                        cout << "Неверная позиция." << endl;
+                    list.print();
+                    break;
+                case 12:
+                    list.clear();
+                    cout << "Список очищен." << endl;
+                    break;
+                case 13: {
+                    cout << "Обход списка с помощью итератора: ";
+                    if (list.empty()) {
+                        cout << "Список пуст." << endl;
+                    } else {
+                        for (auto it = list.begin(); it != list.end(); ++it) {
+                            cout << *it << " ";
+                        }
+                        cout << endl;
+                    }
+                    break;
+                }
+                case 0:
+                    cout << "Выход из программы." << endl;
+                    break;
+                default:
+                    cout << "Неверный выбор. Попробуйте снова." << endl;
+            }
+        } catch (const std::exception& e) {
+            cerr << "Ошибка: " << e.what() << endl;
+        }
+
+    } while (choice != 0);
+}
+
+int main() {
+    cout << "Демонстрация работы кольцевого односвязного списка." << endl;
+    cout << "Создан пустой список для целых чисел." << endl;
+
+    CircularList<int> myList;
+    showMenu(myList);
+
+    return 0;
+}

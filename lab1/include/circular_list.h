@@ -243,82 +243,105 @@ public:
         return true;
     }
 
-    // --- Итераторы ---
+        // --- Итераторы ---
     class Iterator {
     private:
-        Node* current;
-        Node* const head; // Нужен для определения конца в кольце
-        int steps;        // Счетчик пройденных шагов
-        int listSize;     // Размер списка на момент создания итератора
+        CircularList<T>* owner; // Список-владелец
+        Node* current;          // Текущий узел
+
+        // Служебные ссылки для регистрации итератора в списке
+        Iterator* prevIter;
+        Iterator* nextIter;
+
+        friend class CircularList<T>;
 
     public:
-        Iterator(Node* startNode, Node* listHead, int size) : current(startNode), head(listHead), steps(0), listSize(size) {}
+        // Конструктор
+        Iterator(CircularList<T>* list = nullptr, Node* startNode = nullptr, bool needRegister = true)
+            : owner(list), current(startNode), prevIter(nullptr), nextIter(nullptr) {
+            if (owner != nullptr && needRegister) {
+                owner->registerIterator(this);
+            }
+        }
+
+        // Конструктор копирования
+        Iterator(const Iterator& other)
+            : owner(other.owner), current(other.current), prevIter(nullptr), nextIter(nullptr) {
+            if (owner != nullptr) {
+                owner->registerIterator(this);
+            }
+        }
+
+        // Оператор присваивания
+        Iterator& operator=(const Iterator& other) {
+            if (this == &other) return *this;
+
+            if (owner != nullptr) {
+                owner->unregisterIterator(this);
+            }
+
+            owner = other.owner;
+            current = other.current;
+            prevIter = nullptr;
+            nextIter = nullptr;
+
+            if (owner != nullptr) {
+                owner->registerIterator(this);
+            }
+
+            return *this;
+        }
+
+        // Деструктор
+        ~Iterator() {
+            if (owner != nullptr) {
+                owner->unregisterIterator(this);
+            }
+        }
 
         // Оператор доступа по чтению/записи
         T& operator*() {
-            if (current == nullptr) throw std::runtime_error("Iterator is not set");
+            if (current == nullptr) {
+                throw std::runtime_error("Iterator is not set");
+            }
             return current->data;
         }
 
-        // Префиксный инкремент (переход к следующему)
+        // Префиксный инкремент
         Iterator& operator++() {
             if (current == nullptr) return *this;
-            current = current->next;
-            steps++;
-            // Если прошли полный круг, считаем итератор достигшим конца
-            if (steps >= listSize) {
+
+            // Если стоим на последнем элементе, следующий шаг ведет в end()
+            if (owner != nullptr && current->next == owner->head) {
                 current = nullptr;
+            } else {
+                current = current->next;
             }
+
             return *this;
         }
 
         // Постфиксный инкремент
         Iterator operator++(int) {
-            Iterator temp = *this;
+            Iterator temp(*this);
             ++(*this);
             return temp;
         }
 
         // Проверка равенства
         bool operator==(const Iterator& other) const {
-            return current == other.current;
+            return owner == other.owner && current == other.current;
         }
 
         // Проверка неравенства
         bool operator!=(const Iterator& other) const {
-            return current != other.current;
+            return !(*this == other);
         }
     };
 
-    // Запрос итератора begin()
-    Iterator begin() {
-        if (empty()) return end();
-        return Iterator(head, head, count);
-    }
-
-    // Запрос итератора end()
-    Iterator end() {
-        return Iterator(nullptr, head, count);
-    }
-
-    // Операция вывода для отладки
-    void print() const {
-        if (empty()) {
-            std::cout << "List: [empty]" << std::endl;
-            return;
-        }
-        std::cout << "List (size=" << count << "): [";
-        Node* current = head;
-        for (int i = 0; i < count; ++i) {
-            std::cout << current->data;
-            if (i < count - 1) std::cout << ", ";
-            current = current->next;
-        }
-        std::cout << "]" << std::endl;
-    }
-
-    // Получить голову "списка"
-    Node* getHead() const { return head; }
-};
 
 #endif // CIRCULAR_LIST_H
+
+
+
+

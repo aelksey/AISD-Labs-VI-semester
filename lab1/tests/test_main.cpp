@@ -1,6 +1,17 @@
 #include <gtest/gtest.h>
 #include "circular_list.h"
 
+
+
+// TODO :
+
+// Установить итератор в элемент (по позиции)
+// Удалить элемент на котором находится итератор(выбросить исключение)
+// Сдвинуть итератор (++ --)
+
+// Граничные случаи
+
+
 // Тест конструктора по умолчанию и базовых операций
 TEST(CircularListTest, ConstructorAndBasicOps) {
     CircularList<int> list;

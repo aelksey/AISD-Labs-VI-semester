@@ -10,6 +10,7 @@ void showMenu(CircularList<T>& list) {
     int choice;
     T value;
     int pos;
+    auto iter = list.end();
 
     do {
         cout << "\n========== МЕНЮ ОПЕРАЦИЙ СО СПИСКОМ ==========" << endl;
@@ -26,6 +27,11 @@ void showMenu(CircularList<T>& list) {
         cout << "11. Удалить элемент по позиции (remove_at)" << endl;
         cout << "12. Очистить список (clear)" << endl;
         cout << "13. Продемонстрировать итератор" << endl;
+        cout << "14. Получить итератор(*)" << endl;
+        cout << "15. Установить итератор" << endl;
+        cout << "16. Сдвинуть итератор(++)" << endl;
+        cout << "17. Установить итератор в начало(begin)" << endl;
+        cout << "18. Установить итератор в конец(end)" << endl;
         cout << "0. Выход" << endl;
         cout << "================================================" << endl;
         cout << "Ваш выбор: ";
@@ -37,6 +43,8 @@ void showMenu(CircularList<T>& list) {
         }
 
         try {
+            
+
             switch (choice) {
                 case 1:
                     list.print();
@@ -51,6 +59,7 @@ void showMenu(CircularList<T>& list) {
                     cout << "Введите значение для добавления в конец: ";
                     cin >> value;
                     list.push_back(value);
+                    iter = list.end();
                     cout << "Элемент добавлен." << endl;
                     list.print();
                     break;
@@ -60,6 +69,7 @@ void showMenu(CircularList<T>& list) {
                     cout << "Введите значение: ";
                     cin >> value;
                     list.insert(pos, value);
+                    iter = list.end();
                     cout << "Элемент вставлен." << endl;
                     list.print();
                     break;
@@ -94,18 +104,21 @@ void showMenu(CircularList<T>& list) {
                 case 10:
                     cout << "Введите значение для удаления: ";
                     cin >> value;
-                    if (list.remove_value(value))
+                    if (list.remove_value(value)){
                         cout << "Значение удалено." << endl;
-                    else
+                        iter = list.end();
+                    }else
                         cout << "Значение не найдено." << endl;
+                    
                     list.print();
                     break;
                 case 11:
                     cout << "Введите позицию для удаления: ";
                     cin >> pos;
-                    if (list.remove_at(pos))
+                    if (list.remove_at(pos)){
                         cout << "Элемент удален." << endl;
-                    else
+                        iter = list.end();
+                    }else
                         cout << "Неверная позиция." << endl;
                     list.print();
                     break;
@@ -125,6 +138,32 @@ void showMenu(CircularList<T>& list) {
                     }
                     break;
                 }
+                case 14: {
+                    cout << "Текущее значение: " << *iter << endl;
+                    break;
+                }
+                case 15:{
+                    cout << "Текущее значение: " << *iter << endl;
+                    cout << "Новое значение: ";
+                    cin >> value;
+                    *iter = value;
+                    break;
+                }
+                case 16:{
+                    ++iter;
+                    cout << "Текущее значение: " << *iter << endl;
+                    break;
+                }
+                case 17:{
+                    iter = list.begin();
+                    break;
+                }
+                case 18:{
+                    iter = list.end();
+                    break;
+                }
+                
+
                 case 0:
                     cout << "Выход из программы." << endl;
                     break;
@@ -147,3 +186,8 @@ int main() {
 
     return 0;
 }
+
+
+// Установить итератор в элемент (по позиции)
+// Удалить элемент на котором находится итератор(выбросить исключение)
+// Сдвинуть итератор (++ --)

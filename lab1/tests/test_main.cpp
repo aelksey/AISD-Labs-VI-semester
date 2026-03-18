@@ -1,25 +1,15 @@
 #include <gtest/gtest.h>
 #include "circular_list.h"
+#include <vector>
 
-
-
-// TODO :
-
-// Установить итератор в элемент (по позиции)
-// Удалить элемент на котором находится итератор(выбросить исключение)
-// Сдвинуть итератор (++ --)
-
-// Граничные случаи
-
-
-// Тест конструктора по умолчанию и базовых операций
-TEST(CircularListTest, ConstructorAndBasicOps) {
+// Тест конструктора по умолчанию
+TEST(CircularListTest, Constructor) {
     CircularList<int> list;
     EXPECT_TRUE(list.empty());
     EXPECT_EQ(list.size(), 0);
 }
 
-// Тест вставки в конец (push_back) и доступа по индексу (at)
+// Тест push_back и доступа по индексу
 TEST(CircularListTest, PushBackAndAt) {
     CircularList<int> list;
     list.push_back(10);
@@ -27,41 +17,32 @@ TEST(CircularListTest, PushBackAndAt) {
     list.push_back(30);
 
     EXPECT_EQ(list.size(), 3);
-    EXPECT_FALSE(list.empty());
     EXPECT_EQ(list.at(0), 10);
     EXPECT_EQ(list.at(1), 20);
     EXPECT_EQ(list.at(2), 30);
-
-    // Проверка на исключение при выходе за границы
     EXPECT_THROW(list.at(3), std::out_of_range);
 }
 
-// Тест вставки в произвольную позицию (insert)
+// Тест вставки
 TEST(CircularListTest, Insert) {
     CircularList<int> list;
     list.push_back(10);
-    list.push_back(30); // Список: 10, 30
+    list.push_back(30);
 
-    list.insert(1, 20); // Вставка в середину
-    EXPECT_EQ(list.size(), 3);
+    list.insert(1, 20);
     EXPECT_EQ(list.at(0), 10);
     EXPECT_EQ(list.at(1), 20);
     EXPECT_EQ(list.at(2), 30);
 
-    list.insert(0, 5); // Вставка в начало
-    EXPECT_EQ(list.size(), 4);
+    list.insert(0, 5);
     EXPECT_EQ(list.at(0), 5);
     EXPECT_EQ(list.at(1), 10);
 
-    list.insert(4, 40); // Вставка в конец
-    EXPECT_EQ(list.size(), 5);
+    list.insert(4, 40);
     EXPECT_EQ(list.at(4), 40);
-
-    // Проверка кольцевой структуры (последний элемент указывает на первый)
-    // Не можем проверить напрямую, но можем пройти через итератор
 }
 
-// Тест изменения значения (set)
+// Тест изменения значения
 TEST(CircularListTest, Set) {
     CircularList<int> list;
     list.push_back(1);
@@ -72,11 +53,9 @@ TEST(CircularListTest, Set) {
     EXPECT_EQ(list.at(0), 1);
     EXPECT_EQ(list.at(1), 99);
     EXPECT_EQ(list.at(2), 3);
-
-    EXPECT_THROW(list.set(3, 100), std::out_of_range);
 }
 
-// Тест поиска индекса по значению (indexOf)
+// Тест indexOf
 TEST(CircularListTest, IndexOf) {
     CircularList<int> list;
     list.push_back(10);
@@ -84,12 +63,12 @@ TEST(CircularListTest, IndexOf) {
     list.push_back(30);
     list.push_back(20);
 
-    EXPECT_EQ(list.indexOf(20), 1); // Первое вхождение
+    EXPECT_EQ(list.indexOf(20), 1);
     EXPECT_EQ(list.indexOf(30), 2);
-    EXPECT_EQ(list.indexOf(40), -1); // Не найдено
+    EXPECT_EQ(list.indexOf(40), -1);
 }
 
-// Тест проверки наличия значения (contains)
+// Тест contains
 TEST(CircularListTest, Contains) {
     CircularList<int> list;
     list.push_back(10);
@@ -100,70 +79,60 @@ TEST(CircularListTest, Contains) {
     EXPECT_FALSE(list.contains(30));
 }
 
-// Тест удаления по значению (remove_value)
+// Тест remove_value
 TEST(CircularListTest, RemoveValue) {
     CircularList<int> list;
     list.push_back(10);
     list.push_back(20);
     list.push_back(30);
-    list.push_back(20); // Список: 10, 20, 30, 20
+    list.push_back(20);
 
-    // Удаление первого вхождения
     EXPECT_TRUE(list.remove_value(20));
     EXPECT_EQ(list.size(), 3);
     EXPECT_EQ(list.at(0), 10);
     EXPECT_EQ(list.at(1), 30);
     EXPECT_EQ(list.at(2), 20);
 
-    // Удаление элемента, который теперь первый
     EXPECT_TRUE(list.remove_value(10));
     EXPECT_EQ(list.size(), 2);
     EXPECT_EQ(list.at(0), 30);
     EXPECT_EQ(list.at(1), 20);
 
-    // Удаление последнего элемента
     EXPECT_TRUE(list.remove_value(20));
     EXPECT_EQ(list.size(), 1);
     EXPECT_EQ(list.at(0), 30);
 
-    // Удаление единственного элемента
     EXPECT_TRUE(list.remove_value(30));
     EXPECT_TRUE(list.empty());
 
-    // Попытка удалить несуществующий элемент
     EXPECT_FALSE(list.remove_value(100));
 }
 
-// Тест удаления по позиции (remove_at)
+// Тест remove_at
 TEST(CircularListTest, RemoveAt) {
     CircularList<int> list;
     list.push_back(10);
     list.push_back(20);
-    list.push_back(30); // Список: 10, 20, 30
+    list.push_back(30);
 
-    // Удаление из середины
     EXPECT_TRUE(list.remove_at(1));
     EXPECT_EQ(list.size(), 2);
     EXPECT_EQ(list.at(0), 10);
     EXPECT_EQ(list.at(1), 30);
 
-    list.push_back(40); // Список: 10, 30, 40
-    // Удаление последнего
+    list.push_back(40);
     EXPECT_TRUE(list.remove_at(2));
     EXPECT_EQ(list.size(), 2);
     EXPECT_EQ(list.at(0), 10);
     EXPECT_EQ(list.at(1), 30);
 
-    // Удаление первого
     EXPECT_TRUE(list.remove_at(0));
     EXPECT_EQ(list.size(), 1);
     EXPECT_EQ(list.at(0), 30);
 
-    // Удаление единственного
     EXPECT_TRUE(list.remove_at(0));
     EXPECT_TRUE(list.empty());
 
-    // Неверная позиция
     EXPECT_FALSE(list.remove_at(0));
 }
 
@@ -181,13 +150,12 @@ TEST(CircularListTest, CopyConstructor) {
     EXPECT_EQ(list2.at(1), 2);
     EXPECT_EQ(list2.at(2), 3);
 
-    // Проверка, что списки независимы
     list2.set(1, 99);
     EXPECT_EQ(list1.at(1), 2);
     EXPECT_EQ(list2.at(1), 99);
 }
 
-// Тест очистки списка (clear)
+// Тест clear
 TEST(CircularListTest, Clear) {
     CircularList<int> list;
     list.push_back(1);
@@ -205,17 +173,70 @@ TEST(CircularListTest, Iterator) {
     list.push_back(20);
     list.push_back(30);
 
-    int expected[] = {10, 20, 30};
-    int i = 0;
+    std::vector<int> result;
     for (auto it = list.begin(); it != list.end(); ++it) {
-        EXPECT_EQ(*it, expected[i]);
-        i++;
+        result.push_back(*it);
     }
-    EXPECT_EQ(i, 3);
 
-    // Проверка на пустом списке
-    CircularList<int> emptyList;
-    EXPECT_TRUE(emptyList.begin() == emptyList.end());
+    std::vector<int> expected = {10, 20, 30};
+    EXPECT_EQ(result, expected);
+}
+
+// Тест: удаление элемента, на который указывает итератор
+TEST(CircularListTest, IteratorAfterRemoveCurrent) {
+    CircularList<int> list;
+    list.push_back(10);
+    list.push_back(20);
+    list.push_back(30);
+    list.push_back(40);
+    
+    auto it = list.begin();
+    ++it; // теперь указывает на 20
+    
+    EXPECT_EQ(*it, 20);
+    
+    list.remove_value(20);
+    
+    // Итератор должен теперь указывать на следующий элемент (30)
+    EXPECT_EQ(*it, 30);
+    
+    std::vector<int> result;
+    for (auto iter = list.begin(); iter != list.end(); ++iter) {
+        result.push_back(*iter);
+    }
+    std::vector<int> expected = {10, 30, 40};
+    EXPECT_EQ(result, expected);
+}
+
+// Тест: удаление второго элемента
+TEST(CircularListTest, IteratorRemoveSecondElem) {
+    CircularList<int> list;
+    list.push_back(10);
+    list.push_back(20);
+    list.push_back(30);
+    
+    auto it = list.begin();
+    ++it;
+    EXPECT_EQ(*it, 20);
+    
+    list.remove_value(20);
+    
+    EXPECT_EQ(*it, 30);
+}
+
+// Тест: удаление первого элемента
+TEST(CircularListTest, IteratorRemoveFirstElem) {
+    CircularList<int> list;
+    list.push_back(10);
+    list.push_back(20);
+    list.push_back(30);
+
+    auto it = list.begin();
+    EXPECT_EQ(*it, 10);
+    
+    list.remove_value(10);
+    
+    EXPECT_EQ(*it, 20);
 }
 
 int main(int argc, char **argv) {

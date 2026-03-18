@@ -3,31 +3,59 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <vector>
+#include <algorithm>
+
+// Предварительное объявление
+template <typename T>
+class CircularList;
+
+// Базовый класс для итератора
+template <typename T>
+class IteratorBase {
+public:
+    virtual ~IteratorBase() {}
+    virtual void handleNodeDeleted(typename CircularList<T>::Node* deletedNode, 
+                                   typename CircularList<T>::Node* nextNode) = 0;
+    virtual bool isValid() const = 0;
+    virtual typename CircularList<T>::Node* getCurrent() const = 0;
+};
 
 // Шаблонный класс для кольцевого односвязного списка
 template <typename T>
 class CircularList {
-private:
+public:
     // Внутренний класс для узла списка
     struct Node {
         T data;         // Данные узла
         Node* next;     // Указатель на следующий узел
+        bool isDeleted; // Флаг, указывающий, что узел помечен на удаление
 
-        // Конструктор узла
-        Node(const T& value) : data(value), next(nullptr) {}
+        Node(const T& value) : data(value), next(nullptr), isDeleted(false) {}
     };
+    Node* getHead() const { return head; }
 
-    Node* head;     // Указатель на голову списка (первый элемент)
-    int count;      // Текущий размер списка
+private:
+    Node* head;
+    int count;
+    mutable std::vector<IteratorBase<T>*> activeIterators;
+
+    // Вспомогательная функция для поиска последнего элемента
+    Node* findLast() const {
+        if (empty()) return nullptr;
+        Node* last = head;
+        while (last->next != head) {
+            last = last->next;
+        }
+        return last;
+    }
 
 public:
     // --- Конструкторы и деструктор ---
     CircularList() : head(nullptr), count(0) {}
 
-    // Конструктор копирования
     CircularList(const CircularList<T>& other) : head(nullptr), count(0) {
         if (other.head == nullptr) return;
-
         Node* current = other.head;
         do {
             this->push_back(current->data);
@@ -35,12 +63,11 @@ public:
         } while (current != other.head);
     }
 
-    // Деструктор
     ~CircularList() {
         clear();
     }
 
-    // --- Основные операции интерфейса ---
+    // --- Основные операции ---
     int size() const { return count; }
     bool empty() const { return count == 0; }
 
@@ -48,28 +75,32 @@ public:
         if (empty()) return;
         Node* current = head;
         Node* nextNode = nullptr;
-        do {
+        for (int i = 0; i < count; ++i) {
             nextNode = current->next;
             delete current;
             current = nextNode;
-        } while (current != head);
+        }
         head = nullptr;
         count = 0;
+        
+        // Оповещаем итераторы
+        for (auto* iter : activeIterators) {
+            if (iter) {
+                iter->handleNodeDeleted(nullptr, nullptr);
+            }
+        }
     }
 
-    // Проверка наличия значения
     bool contains(const T& value) const {
         if (empty()) return false;
         Node* current = head;
-        do {
-            if (current->data == value) return true;
+        for (int i = 0; i < count; ++i) {
+            if (current->data == value && !current->isDeleted) return true;
             current = current->next;
-        } while (current != head);
+        }
         return false;
     }
 
-    // Неконстантная версия (позволяет изменять элемент)
-    // Чтение значения по позиции (индексу, начиная с 0)
     T& at(int pos) {
         if (pos < 0 || pos >= count) {
             throw std::out_of_range("Index out of range");
@@ -78,10 +109,12 @@ public:
         for (int i = 0; i < pos; ++i) {
             current = current->next;
         }
-        return current->data; // Возвращает ссылку, которую можно изменить
+        if (current->isDeleted) {
+            throw std::runtime_error("Accessing deleted node");
+        }
+        return current->data;
     }
 
-    // Константная версия (только для чтения)
     const T& at(int pos) const {
         if (pos < 0 || pos >= count) {
             throw std::out_of_range("Index out of range");
@@ -90,10 +123,12 @@ public:
         for (int i = 0; i < pos; ++i) {
             current = current->next;
         }
-        return current->data; // Возвращает константную ссылку
+        if (current->isDeleted) {
+            throw std::runtime_error("Accessing deleted node");
+        }
+        return current->data;
     }
 
-    // Изменение значения по позиции
     void set(int pos, const T& value) {
         if (pos < 0 || pos >= count) {
             throw std::out_of_range("Index out of range");
@@ -102,38 +137,35 @@ public:
         for (int i = 0; i < pos; ++i) {
             current = current->next;
         }
+        if (current->isDeleted) {
+            throw std::runtime_error("Accessing deleted node");
+        }
         current->data = value;
     }
 
-    // Получение позиции первого вхождения значения
     int indexOf(const T& value) const {
         if (empty()) return -1;
         Node* current = head;
         for (int i = 0; i < count; ++i) {
-            if (current->data == value) return i;
+            if (current->data == value && !current->isDeleted) return i;
             current = current->next;
         }
         return -1;
     }
 
-    // Включение нового значения в конец
     void push_back(const T& value) {
         Node* newNode = new Node(value);
         if (empty()) {
             head = newNode;
-            head->next = head; // Замыкаем на себя
+            head->next = head;
         } else {
-            Node* last = head;
-            while (last->next != head) {
-                last = last->next;
-            }
+            Node* last = findLast();
             last->next = newNode;
             newNode->next = head;
         }
         ++count;
     }
 
-    // Включение нового значения в позицию
     void insert(int pos, const T& value) {
         if (pos < 0 || pos > count) {
             throw std::out_of_range("Insert position out of range");
@@ -143,15 +175,12 @@ public:
         if (empty()) {
             head = newNode;
             head->next = head;
-        } else if (pos == 0) { // Вставка в начало
-            Node* last = head;
-            while (last->next != head) {
-                last = last->next;
-            }
+        } else if (pos == 0) {
+            Node* last = findLast();
             newNode->next = head;
             head = newNode;
-            last->next = head; // Последний теперь указывает на новую голову
-        } else { // Вставка в середину или конец
+            last->next = head;
+        } else {
             Node* current = head;
             for (int i = 0; i < pos - 1; ++i) {
                 current = current->next;
@@ -162,18 +191,20 @@ public:
         ++count;
     }
 
-    // Удаление первого вхождения значения
     bool remove_value(const T& value) {
+        
         if (empty()) return false;
 
         Node* current = head;
         Node* prev = nullptr;
         Node* toDelete = nullptr;
+        int deletePos = -1;
 
-        // Поиск элемента с конца предыдущего для облегчения удаления в кольце
+        // Поиск элемента для удаления
         for (int i = 0; i < count; ++i) {
-            if (current->data == value) {
+            if (current->data == value && !current->isDeleted) {
                 toDelete = current;
+                deletePos = i;
                 break;
             }
             prev = current;
@@ -182,166 +213,281 @@ public:
 
         if (toDelete == nullptr) return false;
 
-        // Если элемент найден
+        // Сохраняем следующий элемент (ВАЖНО: делаем это ДО любых изменений)
+        Node* nextNode = toDelete->next;
+
+        // ОСОБЫЙ СЛУЧАЙ: если удаляем голову, следующий элемент - новая голова
+        if (toDelete == head) {
+            nextNode = head->next;
+        }
+
+        // Если следующий элемент - голова (удаляем последний элемент)
+        if (nextNode == head) {
+            // Это нормально, просто запоминаем
+        }
+
+        // ШАГ 1: Сначала перестраиваем указатели в списке
         if (count == 1) {
-            delete head;
             head = nullptr;
+            nextNode = nullptr; // В списке больше нет элементов
         } else {
-            Node* last = head;
-            while (last->next != head) {
-                last = last->next;
-            }
+            Node* last = findLast();
 
             if (toDelete == head) { // Удаление головы
-                head = head->next;
-                last->next = head; // Последний теперь указывает на новую голову
-            } else if (toDelete->next == head) { // Удаление последнего элемента
-                prev->next = head;
-            } else { // Удаление из середины
-                prev->next = toDelete->next;
-            }
-            delete toDelete;
-        }
-
-        --count;
-        return true;
-    }
-
-    // Удаление значения из позиции
-    bool remove_at(int pos) {
-        if (pos < 0 || pos >= count) return false;
-
-        Node* toDelete = nullptr;
-
-        if (count == 1) {
-            toDelete = head;
-            head = nullptr;
-        } else {
-            Node* prev = head;
-            for (int i = 0; i < pos - 1; ++i) {
-                prev = prev->next;
-            }
-            toDelete = prev->next;
-
-            Node* last = head;
-            while (last->next != head) {
-                last = last->next;
-            }
-
-            if (pos == 0) { // Удаление головы
-                toDelete = head;
-                head = head->next;
-                last->next = head;
+                head = head->next;           // head теперь указывает на следующий
+                last->next = head;            // последний указывает на новую голову
+                nextNode = head;              // следующий для итератора - новая голова
             } else if (toDelete->next == head) { // Удаление последнего
                 prev->next = head;
+                nextNode = nullptr;            // после последнего ничего нет
             } else { // Удаление из середины
                 prev->next = toDelete->next;
+                // nextNode уже правильный (toDelete->next)
             }
         }
+
+        // ШАГ 2: Помечаем как удаленный
+        toDelete->isDeleted = true;
+
+        // ШАГ 3: Оповещаем итераторы
+        for (auto* iter : activeIterators) {
+            if (iter) {
+                iter->handleNodeDeleted(toDelete, nextNode);
+            }
+        }
+
+        // ШАГ 4: Удаляем узел
         delete toDelete;
         --count;
         return true;
     }
 
-        // --- Итераторы ---
-    class Iterator {
+    bool remove_at(int pos) {
+        if (pos < 0 || pos >= count) return false;
+
+        Node* toDelete = nullptr;
+        Node* prev = nullptr;
+        Node* nextNode = nullptr;
+
+        if (count == 1) {
+            toDelete = head;
+            nextNode = nullptr;
+        } else {
+            Node* last = findLast();
+
+            if (pos == 0) { // Удаление головы
+                toDelete = head;
+                nextNode = head->next;        // следующий после головы
+                head = head->next;             // обновляем голову
+                last->next = head;              // последний указывает на новую голову
+            } else {
+                prev = head;
+                for (int i = 0; i < pos - 1; ++i) {
+                    prev = prev->next;
+                }
+                toDelete = prev->next;
+                nextNode = toDelete->next;
+
+                if (nextNode == head) { // Если удаляем последний
+                    prev->next = head;
+                    nextNode = nullptr;  // после последнего ничего нет
+                } else {
+                    prev->next = nextNode;
+                }
+            }
+        }
+
+        // Помечаем как удаленный
+        toDelete->isDeleted = true;
+
+        // Оповещаем итераторы
+        for (auto* iter : activeIterators) {
+            if (iter) {
+                iter->handleNodeDeleted(toDelete, nextNode);
+            }
+        }
+
+        delete toDelete;
+        --count;
+        return true;
+    }   
+
+    // --- Методы для управления итераторами ---
+    void registerIterator(IteratorBase<T>* iter) const {
+        activeIterators.push_back(iter);
+    }
+
+    void unregisterIterator(IteratorBase<T>* iter) const {
+        auto it = std::find(activeIterators.begin(), activeIterators.end(), iter);
+        if (it != activeIterators.end()) {
+            activeIterators.erase(it);
+        }
+    }
+
+    // --- Итераторы ---
+    class Iterator : public IteratorBase<T> {
     private:
-        CircularList<T>* owner; // Список-владелец
-        Node* current;          // Текущий узел
-
-        // Служебные ссылки для регистрации итератора в списке
-        Iterator* prevIter;
-        Iterator* nextIter;
-
-        friend class CircularList<T>;
+        CircularList<T>* list;
+        Node* current;
+        int steps;
+        int initialSize;
 
     public:
-        // Конструктор
-        Iterator(CircularList<T>* list = nullptr, Node* startNode = nullptr, bool needRegister = true)
-            : owner(list), current(startNode), prevIter(nullptr), nextIter(nullptr) {
-            if (owner != nullptr && needRegister) {
-                owner->registerIterator(this);
+        Iterator(CircularList<T>* lst, Node* startNode, int size) 
+            : list(lst), current(startNode), steps(0), initialSize(size) {
+            if (list) {
+                list->registerIterator(this);
+            }
+            
+            // Пропускаем удаленные узлы при инициализации
+            if (current != nullptr) {
+                while (current != nullptr && current->isDeleted) {
+                    current = current->next;
+                    if (current == list->head) {
+                        current = nullptr;
+                        break;
+                    }
+                }
             }
         }
 
-        // Конструктор копирования
-        Iterator(const Iterator& other)
-            : owner(other.owner), current(other.current), prevIter(nullptr), nextIter(nullptr) {
-            if (owner != nullptr) {
-                owner->registerIterator(this);
+        ~Iterator() {
+            if (list) {
+                list->unregisterIterator(this);
             }
         }
 
-        // Оператор присваивания
+        Iterator(const Iterator& other) 
+            : list(other.list), current(other.current), 
+              steps(other.steps), initialSize(other.initialSize) {
+            if (list) {
+                list->registerIterator(this);
+            }
+        }
+
         Iterator& operator=(const Iterator& other) {
-            if (this == &other) return *this;
-
-            if (owner != nullptr) {
-                owner->unregisterIterator(this);
+            if (this != &other) {
+                if (list) {
+                    list->unregisterIterator(this);
+                }
+                list = other.list;
+                current = other.current;
+                steps = other.steps;
+                initialSize = other.initialSize;
+                if (list) {
+                    list->registerIterator(this);
+                }
             }
-
-            owner = other.owner;
-            current = other.current;
-            prevIter = nullptr;
-            nextIter = nullptr;
-
-            if (owner != nullptr) {
-                owner->registerIterator(this);
-            }
-
             return *this;
         }
 
-        // Деструктор
-        ~Iterator() {
-            if (owner != nullptr) {
-                owner->unregisterIterator(this);
-            }
-        }
-
-        // Оператор доступа по чтению/записи
         T& operator*() {
             if (current == nullptr) {
-                throw std::runtime_error("Iterator is not set");
+                throw std::runtime_error("Iterator is not set or reached end");
             }
             return current->data;
         }
 
-        // Префиксный инкремент
         Iterator& operator++() {
-            if (current == nullptr) return *this;
-
-            // Если стоим на последнем элементе, следующий шаг ведет в end()
-            if (owner != nullptr && current->next == owner->head) {
+            std::cout << "Increment: current=" << (current ? current->data : 0) 
+                      << ", steps=" << steps << ", initialSize=" << initialSize 
+                      << ", isHead=" << (current == list->head) << std::endl;
+                
+            if (current == nullptr || steps >= initialSize) {
                 current = nullptr;
-            } else {
-                current = current->next;
+                return *this;
+            }
+
+            Node* nextNode = current->next;
+            steps++;
+            current = nextNode;
+
+            if (steps >= initialSize || current == list->head) {
+                current = nullptr;
             }
 
             return *this;
         }
 
-        // Постфиксный инкремент
-        Iterator operator++(int) {
-            Iterator temp(*this);
-            ++(*this);
-            return temp;
-        }
-
-        // Проверка равенства
         bool operator==(const Iterator& other) const {
-            return owner == other.owner && current == other.current;
+            return current == other.current;
         }
 
-        // Проверка неравенства
         bool operator!=(const Iterator& other) const {
-            return !(*this == other);
+            return current != other.current;
         }
+
+        bool isValid() const override {
+            return current != nullptr;
+        }
+
+        Node* getCurrent() const override {
+            return current;
+        }
+
+    void handleNodeDeleted(Node* deletedNode, Node* nextNode) override {
+        
+        if (current == deletedNode) {
+        // Переходим на следующий элемент
+        current = nextNode;
+        
+        // Если список стал пустым
+        if (list->empty()) {
+            current = nullptr;
+            return;
+        }
+        
+        // Проверяем, не удален ли следующий узел
+        if (current != nullptr && current->isDeleted) {
+            // Пропускаем удаленные узлы
+            Node* temp = current;
+            int safetySteps = 0;
+            while (temp != nullptr && temp->isDeleted && safetySteps < list->size()) {
+                temp = temp->next;
+                safetySteps++;
+                if (temp == list->getHead()) {
+                    temp = nullptr;
+                    break;
+                }
+            }
+            current = temp;
+        }
+        
+        // Корректируем steps, так как мы переместились без инкремента
+        // Это важно для правильного определения конца
+        if (current == nullptr) {
+            // Достигли конца
+        }
+    }
+}
     };
 
+    Iterator begin() {
+        if (empty()) return end();
+        return Iterator(this, head, count);
+    }
+
+    Iterator end() {
+        return Iterator(this, nullptr, count);
+    }
+
+    void print() const {
+        if (empty()) {
+            std::cout << "List: [empty]" << std::endl;
+            return;
+        }
+        std::cout << "List (size=" << count << "): [";
+        Node* current = head;
+        for (int i = 0; i < count; ++i) {
+            std::cout << current->data;
+            if (current->isDeleted) {
+                std::cout << "(deleted)";
+            }
+            if (i < count - 1) std::cout << ", ";
+            current = current->next;
+        }
+        std::cout << "]" << std::endl;
+    }
+};
 
 #endif // CIRCULAR_LIST_H
-
-
-
-

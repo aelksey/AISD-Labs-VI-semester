@@ -26,7 +26,6 @@ void showMenu(CircularList<T>& list) {
         cout << "10. Удалить элемент по значению (remove_value)" << endl;
         cout << "11. Удалить элемент по позиции (remove_at)" << endl;
         cout << "12. Очистить список (clear)" << endl;
-        cout << "13. Продемонстрировать итератор" << endl;
         cout << "14. Получить итератор(*)" << endl;
         cout << "15. Установить итератор" << endl;
         cout << "16. Сдвинуть итератор(++)" << endl;
@@ -59,7 +58,6 @@ void showMenu(CircularList<T>& list) {
                     cout << "Введите значение для добавления в конец: ";
                     cin >> value;
                     list.push_back(value);
-                    iter = list.end();
                     cout << "Элемент добавлен." << endl;
                     list.print();
                     break;
@@ -69,7 +67,6 @@ void showMenu(CircularList<T>& list) {
                     cout << "Введите значение: ";
                     cin >> value;
                     list.insert(pos, value);
-                    iter = list.end();
                     cout << "Элемент вставлен." << endl;
                     list.print();
                     break;
@@ -106,7 +103,6 @@ void showMenu(CircularList<T>& list) {
                     cin >> value;
                     if (list.remove_value(value)){
                         cout << "Значение удалено." << endl;
-                        iter = list.end();
                     }else
                         cout << "Значение не найдено." << endl;
                     
@@ -117,7 +113,6 @@ void showMenu(CircularList<T>& list) {
                     cin >> pos;
                     if (list.remove_at(pos)){
                         cout << "Элемент удален." << endl;
-                        iter = list.end();
                     }else
                         cout << "Неверная позиция." << endl;
                     list.print();
@@ -126,18 +121,6 @@ void showMenu(CircularList<T>& list) {
                     list.clear();
                     cout << "Список очищен." << endl;
                     break;
-                case 13: {
-                    cout << "Обход списка с помощью итератора: ";
-                    if (list.empty()) {
-                        cout << "Список пуст." << endl;
-                    } else {
-                        for (auto it = list.begin(); it != list.end(); ++it) {
-                            cout << *it << " ";
-                        }
-                        cout << endl;
-                    }
-                    break;
-                }
                 case 14: {
                     cout << "Текущее значение: " << *iter << endl;
                     break;

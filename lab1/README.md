@@ -165,3 +165,8 @@ https://terminalroot.com/how-to-install-cmake-on-windows/
 Установка gtest:
 
 https://gist.github.com/motchy869/22d873415722a1c10bc77d3f761339dc#file-setup-googletest-on-windows-md
+
+#### Ребус
+
+[text](rebus/rebus.md)
+

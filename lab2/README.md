@@ -259,39 +259,6 @@ cd build && ./bst_tests
 
 **Средняя высота случайного BST**: ≈ 1.39 × log₂(n)
 
-## 🐛 Устранение неполадок
-
-### Ошибка: "Qt platform plugin not found"
-
-```bash
-export QT_QPA_PLATFORM=xcb
-./bst_gui
-```
-
-### Ошибка: "undefined symbol: __libc_pthread_init"
-
-```bash
-# Запуск с изоляцией от Snap
-unset LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
-./bst_gui
-```
-
-### Ошибка компиляции: "QApplication: No such file"
-
-```bash
-sudo apt install --reinstall qt5-default qtbase5-dev
-```
-
-### Пересборка проекта
-
-```bash
-cd build
-rm -rf *
-cmake ..
-make -j$(nproc)
-```
-
 ## 📚 Документация
 
 ### Класс BST
@@ -357,22 +324,6 @@ public:
 };
 ```
 
-## 👥 Авторы
-
-- **Студент** - Разработка и тестирование
-- **Научный руководитель** - Постановка задачи, консультации
-
-## 📄 Лицензия
-
-Проект разработан в учебных целях. Все права защищены.
-
-## 🙏 Благодарности
-
-- Кафедра вычислительной техники НГТУ
-- Преподаватели курса "Алгоритмы и структуры данных"
-
----
-
 ## 📖 Дополнительная информация
 
 ### Ссылки
@@ -380,10 +331,6 @@ public:
 - [Google Test Documentation](https://google.github.io/googletest/)
 - [CMake Documentation](https://cmake.org/documentation/)
 
-### Контакты
-По вопросам, связанным с проектом, обращайтесь к преподавателю курса.
-
 ---
 
 **© 2024 BST Visualizer Project**
-```

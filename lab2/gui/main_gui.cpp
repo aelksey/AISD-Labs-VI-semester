@@ -872,14 +872,64 @@ void MainWindow::onRemove() {
         return;
     }
     
-    if (tree.remove(key)) {
-        logMessage(QString("REMOVED: key=%1").arg(key));
-        // Сбрасываем итератор после удаления
-        currentIterator = tree.end();
-    } else {
+    // Проверяем, существует ли элемент в дереве
+    if (!tree.contains(key)) {
         logMessage(QString("FAILED: key=%1 not found").arg(key));
         QMessageBox::warning(this, "Error", "Key not found");
+        return;
     }
+    
+    // Проверяем, указывает ли текущий итератор на удаляемый ключ
+    bool iteratorPointsToKey = false;
+    
+    try {
+        if (currentIterator != tree.end() && currentIterator.getKey() == key) {
+            iteratorPointsToKey = true;
+            logMessage(QString("Iterator currently points to key=%1").arg(key));
+        }
+    } catch (const std::exception& e) {
+        // Итератор невалиден, игнорируем
+        logMessage(QString("Iterator is invalid: %1").arg(e.what()));
+        iteratorPointsToKey = false;
+    }
+    
+    if (iteratorPointsToKey) {
+        // Удаляем с перемещением итератора
+        logMessage(QString("REMOVING: key=%1 (iterator will advance)").arg(key));
+        
+        try {
+            int oldKey = currentIterator.getKey();
+            currentIterator = tree.remove(currentIterator);
+            
+            if (currentIterator != tree.end()) {
+                logMessage(QString("REMOVED: key=%1, iterator now points to key=%2")
+                    .arg(oldKey).arg(currentIterator.getKey()));
+            } else {
+                logMessage(QString("REMOVED: key=%1, iterator now at end()").arg(oldKey));
+            }
+        } catch (const std::exception& e) {
+            logMessage(QString("ERROR during removal: %1").arg(e.what()));
+            QMessageBox::warning(this, "Error", QString("Failed to remove: %1").arg(e.what()));
+            updateDisplay();
+            return;
+        }
+    } else {
+        // Обычное удаление
+        logMessage(QString("REMOVED: key=%1 (iterator unchanged)").arg(key));
+        tree.remove(key);
+        
+        // Проверяем, не стал ли итератор невалидным
+        try {
+            if (currentIterator != tree.end()) {
+                currentIterator.getKey(); // Проверяем валидность
+                logMessage("Iterator remains valid");
+            }
+        } catch (const std::exception&) {
+            logMessage("Iterator became invalid, resetting to end()");
+            currentIterator = tree.end();
+        }
+    }
+    
     updateDisplay();
 }
 

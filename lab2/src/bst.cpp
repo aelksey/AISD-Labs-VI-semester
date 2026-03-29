@@ -669,7 +669,6 @@ bool BST<KeyType, DataType>::remove(const KeyType& key) {
             }
         }
     } else {
-        std::cout << "  Tree is empty after removal" << std::endl;
     }
     
     return true;

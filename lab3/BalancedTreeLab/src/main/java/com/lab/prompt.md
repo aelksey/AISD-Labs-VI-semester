@@ -1,0 +1,1 @@
+Now please plan a creation of GUI for this 2-3 tree implementation. In GUI user should be able to: add element, delete element, generate random or degenrate tree of selected size. User should be able to pan using left mouse clisk and zoom in/out using mouse scroll, in GUI should be view options to adjust horizontal and vertical spacing, node radius, use Swing

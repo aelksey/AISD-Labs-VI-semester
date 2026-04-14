@@ -779,4 +779,303 @@ public class Tree23 {
         pprint(root, 0);
         System.out.println();
     }
+
+    public class ForwardIterator {
+        private static class StackEntry {
+            int node;
+            int state;
+
+            StackEntry(int node, int state) {
+                this.node = node;
+                this.state = state;
+            }
+        }
+
+        private ArrayDeque<StackEntry> stack;
+        private double currentValue;
+        private boolean isLeafValue;
+        private boolean valid;
+
+        public ForwardIterator() {
+            stack = new ArrayDeque<>();
+            valid = false;
+        }
+
+        private void pushLeft(int node) {
+            while (node != NULL_INDEX && !isEmpty(node)) {
+                stack.push(new StackEntry(node, 0));
+                if (isLeaf(node)) {
+                    break;
+                }
+                int childCount = treeNodes[node].cCount;
+                if (childCount >= 1) {
+                    node = treeNodes[node].children[0].child;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        public void begin() {
+            stack.clear();
+            if (isEmpty(root)) {
+                valid = false;
+                return;
+            }
+            stack.push(new StackEntry(root, 0));
+            advanceToNext();
+        }
+
+        public void end() {
+            stack.clear();
+            if (isEmpty(root)) {
+                valid = false;
+                return;
+            }
+            ArrayDeque<Double> values = new ArrayDeque<>();
+            begin();
+            while (valid) {
+                values.addLast(currentValue);
+                advanceToNext();
+            }
+            if (!values.isEmpty()) {
+                Double last = values.getLast();
+                currentValue = last;
+                valid = true;
+                isLeafValue = false;
+            }
+        }
+
+        private void advanceToNext() {
+            while (!stack.isEmpty()) {
+                StackEntry entry = stack.pop();
+                int node = entry.node;
+
+                if (node == NULL_INDEX || isEmpty(node)) {
+                    continue;
+                }
+
+                if (isLeaf(node)) {
+                    currentValue = treeNodes[node].elem.ExtractValue();
+                    isLeafValue = true;
+                    valid = true;
+                    return;
+                }
+
+                int childCount = treeNodes[node].cCount;
+
+                if (childCount == 2) {
+                    if (entry.state == 0) {
+                        currentValue = treeNodes[node].children[0].maxChild;
+                        isLeafValue = false;
+                        stack.push(new StackEntry(node, 1));
+                        int leftChild = treeNodes[node].children[0].child;
+                        if (leftChild != NULL_INDEX) {
+                            stack.push(new StackEntry(leftChild, 0));
+                        }
+                        valid = true;
+                        return;
+                    } else {
+                        int rightChild = treeNodes[node].children[1].child;
+                        if (rightChild != NULL_INDEX) {
+                            stack.push(new StackEntry(rightChild, 0));
+                        }
+                    }
+                } else if (childCount == 3) {
+                    if (entry.state == 0) {
+                        currentValue = treeNodes[node].children[0].maxChild;
+                        isLeafValue = false;
+                        stack.push(new StackEntry(node, 1));
+                        int leftChild = treeNodes[node].children[0].child;
+                        if (leftChild != NULL_INDEX) {
+                            stack.push(new StackEntry(leftChild, 0));
+                        }
+                        valid = true;
+                        return;
+                    } else if (entry.state == 1) {
+                        currentValue = treeNodes[node].children[1].maxChild;
+                        isLeafValue = false;
+                        stack.push(new StackEntry(node, 2));
+                        int midChild = treeNodes[node].children[1].child;
+                        if (midChild != NULL_INDEX) {
+                            stack.push(new StackEntry(midChild, 0));
+                        }
+                        valid = true;
+                        return;
+                    } else {
+                        int rightChild = treeNodes[node].children[2].child;
+                        if (rightChild != NULL_INDEX) {
+                            stack.push(new StackEntry(rightChild, 0));
+                        }
+                    }
+                }
+            }
+            valid = false;
+        }
+
+        public boolean gotoByValue(double value) {
+            begin();
+            while (valid) {
+                if (Math.abs(currentValue - value) < 0.0001) {
+                    return true;
+                }
+                if (currentValue > value) {
+                    break;
+                }
+                next();
+            }
+            return false;
+        }
+
+        public boolean gotoByKey(int keyIndex) {
+            begin();
+            int count = 0;
+            while (valid && count < keyIndex) {
+                next();
+                count++;
+            }
+            return valid;
+        }
+
+        public boolean hasNext() {
+            return valid;
+        }
+
+        public TreeElement get() {
+            if (!valid) {
+                return null;
+            }
+            if (isLeafValue) {
+                int leafNode = findLeafWithValue(currentValue);
+                if (leafNode != NULL_INDEX) {
+                    return treeNodes[leafNode].elem;
+                }
+            }
+            return null;
+        }
+
+        private int findLeafWithValue(double value) {
+            if (isEmpty(root)) {
+                return NULL_INDEX;
+            }
+            return findLeafWithValueRec(root, value);
+        }
+
+        private int findLeafWithValueRec(int node, double value) {
+            if (isLeaf(node)) {
+                if (Math.abs(treeNodes[node].elem.ExtractValue() - value) < 0.0001) {
+                    return node;
+                }
+                return NULL_INDEX;
+            }
+            int subTree = deleteFrom(node, value);
+            if (subTree == NULL_INDEX) {
+                return NULL_INDEX;
+            }
+            return findLeafWithValueRec(treeNodes[node].children[subTree].child, value);
+        }
+
+        public int getCurrentNode() {
+            if (!valid) {
+                return NULL_INDEX;
+            }
+            if (isLeafValue) {
+                return findLeafWithValue(currentValue);
+            }
+            return getCurrentKeyNode();
+        }
+
+        public int getCurrentKeyNode() {
+            if (!valid || isLeafValue) {
+                return NULL_INDEX;
+            }
+            double keyValue = currentValue;
+            return findKeyNodeRec(root, keyValue);
+        }
+
+        private int findKeyNodeRec(int node, double keyValue) {
+            if (node == NULL_INDEX || isEmpty(node)) {
+                return NULL_INDEX;
+            }
+            if (isLeaf(node)) {
+                return NULL_INDEX;
+            }
+            int childCount = treeNodes[node].cCount;
+            for (int i = 0; i < childCount - 1; i++) {
+                double maxChild = treeNodes[node].children[i].maxChild;
+                if (Math.abs(maxChild - keyValue) < 0.0001) {
+                    return node;
+                }
+            }
+            int subTree = deleteFrom(node, keyValue);
+            if (subTree == NULL_INDEX) {
+                return NULL_INDEX;
+            }
+            return findKeyNodeRec(treeNodes[node].children[subTree].child, keyValue);
+        }
+
+        public double getCurrentKey() {
+            return valid ? currentValue : 0;
+        }
+
+        public boolean isCurrentLeaf() {
+            return valid && isLeafValue;
+        }
+
+        public boolean isValid() {
+            return valid;
+        }
+
+        public void next() {
+            if (!valid) {
+                return;
+            }
+            advanceToNext();
+        }
+
+        public void previous() {
+            if (!valid || isEmpty(root)) {
+                return;
+            }
+            
+            double targetValue = currentValue;
+            ArrayDeque<Double> values = new ArrayDeque<>();
+            
+            begin();
+            while (valid) {
+                if (Math.abs(currentValue - targetValue) < 0.0001) {
+                    break;
+                }
+                values.addLast(currentValue);
+                advanceToNext();
+            }
+            
+            if (!values.isEmpty()) {
+                Double prevValue = values.getLast();
+                gotoByValue(prevValue);
+            } else {
+                valid = false;
+            }
+        }
+
+        public void deleteCurrent() {
+            if (!valid) {
+                return;
+            }
+            if (isLeafValue) {
+                int leafNode = findLeafWithValue(currentValue);
+                if (leafNode != NULL_INDEX) {
+                    TreeElement elem = treeNodes[leafNode].elem;
+                    Tree23.this.delete(elem);
+                    begin();
+                    return;
+                }
+            }
+            valid = false;
+        }
+    }
+
+    public ForwardIterator iterator() {
+        return new ForwardIterator();
+    }
 }

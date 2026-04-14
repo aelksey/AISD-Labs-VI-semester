@@ -41,7 +41,7 @@ public class Tree23TestRunner {
         originalTests();
     }
 
-    // ==================== EMPTY TREE TESTS ====================
+    // Empty tree tests
     private static void emptyTreeOperations() {
         Tree23 tree = new Tree23();
 
@@ -84,7 +84,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== SINGLE ELEMENT TESTS ====================
+    // Single element tests
     private static void singleElementTree() {
         Tree23 tree = new Tree23();
         tree.insert(new Element(42));
@@ -136,7 +136,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== TWO ELEMENT TESTS ====================
+    // Two element tests
     private static void twoElementTree() {
         Tree23 tree = new Tree23();
         tree.insert(new Element(10));
@@ -169,7 +169,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== DELETE EDGE CASES ====================
+    // Delete edge cases
     private static void deleteEdgeCases() {
         Tree23 tree = new Tree23();
         for (int i = 0; i < 10; i++) {
@@ -242,7 +242,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== INSERT EDGE CASES ====================
+    // Insert edge cases
     private static void insertEdgeCases() {
         test("Insert: Descending order", () -> {
             Tree23 t = new Tree23();
@@ -282,7 +282,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== CIRCULAR LINKED LIST TESTS ====================
+    // Circular linked list tets
     private static void circularLinkedList() {
         Tree23 tree = new Tree23();
         for (int i = 0; i < 5; i++) {
@@ -330,7 +330,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== FIND FIRST LARGER EDGE CASES ====================
+    // Find first larger edge cases
     private static void findFirstLargerEdgeCases() {
         Tree23 tree = new Tree23();
         for (int i = 0; i <= 10; i++) {
@@ -362,7 +362,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== CHANGE VALUE TESTS ====================
+    // Change value tests
     private static void changeValueTests() {
         test("ChangeValue: With equal element", () -> {
             Tree23 t = new Tree23();
@@ -390,7 +390,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== PREVIOUS/NEXT EDGE CASES ====================
+    // Previous/next edge cases
     private static void previousNextEdgeCases() {
         Tree23 tree = new Tree23();
         for (int i = 0; i < 3; i++) {
@@ -419,7 +419,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== DEPTH TESTS ====================
+    // Depth cases
     private static void depthTests() {
         test("Depth: Empty tree has depth 0", () -> {
             Tree23 t = new Tree23();
@@ -439,7 +439,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== STRESS TESTS ====================
+    // Stress tests
     private static void stressTests() {
         test("Stress: Large random insert and delete", () -> {
             Tree23 t = new Tree23();
@@ -487,7 +487,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== ORIGINAL TESTS ====================
+    // Original tests
     private static void originalTests() {
         test("Original: Previous/Next navigation", () -> {
             Tree23 t = new Tree23();
@@ -575,8 +575,7 @@ public class Tree23TestRunner {
         });
     }
 
-    // ==================== HELPER METHODS ====================
-
+    // Helper methods
     private static Tree23 createTree(int from, int to) {
         Tree23 t = new Tree23();
         for (int i = from; i <= to; i++) {
@@ -602,8 +601,7 @@ public class Tree23TestRunner {
         }
     }
 
-    // ==================== ASSERTION HELPERS ====================
-
+    // Assertion helpers
     private static void assertEquals(double expected, double actual, double delta) {
         if (Math.abs(expected - actual) > delta) {
             throw new AssertionError(String.format("Expected: %.2f, Actual: %.2f", expected, actual));

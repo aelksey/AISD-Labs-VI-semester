@@ -15,10 +15,10 @@ public class Tree23GUI extends JPanel {
     private double zoom = 1.0;
     private double panX = 0, panY = 0;
     private Point lastDragPoint;
-    private double horizontalSpacing = 100;
-    private double verticalSpacing = 80;
-    private int nodeRadius = 25;
-    private int fontSize = 12;
+    public double horizontalSpacing = 100;
+    public double verticalSpacing = 80;
+    public int nodeRadius = 25;
+    public int fontSize = 12;
 
     public Tree23GUI() {
         tree = new Tree23();
@@ -75,11 +75,6 @@ public class Tree23GUI extends JPanel {
         });
     }
 
-    /**
-     * Main visualization method - takes a Tree23 object and visualizes it
-     *
-     * @param treeToVisualize The 2-3 tree to visualize
-     */
     public void visualizeTree(Tree23 treeToVisualize) {
         if (treeToVisualize == null) {
             this.tree = new Tree23();
@@ -186,7 +181,7 @@ public class Tree23GUI extends JPanel {
     private void drawEmptyMessage(Graphics2D g2d) {
         g2d.setColor(Color.GRAY);
         g2d.setFont(new Font("Arial", Font.ITALIC, 16));
-        String message = "🌳 Tree is empty. Use controls to add elements.";
+        String message = "Tree is empty. Use controls to add elements.";
         FontMetrics fm = g2d.getFontMetrics();
         int x = (getWidth() - fm.stringWidth(message)) / 2;
         int y = getHeight() / 2;
@@ -269,61 +264,67 @@ public class Tree23GUI extends JPanel {
     }
 
     private void calculatePositions(Map<Integer, TreeNode> nodeMap) {
-        // Find root (node without parent)
-        TreeNode rootNode = null;
-        for (TreeNode node : nodeMap.values()) {
-            boolean hasParent = false;
-            for (TreeNode other : nodeMap.values()) {
-                if (other.children.contains(node)) {
-                    hasParent = true;
-                    break;
-                }
-            }
-            if (!hasParent) {
-                rootNode = node;
-                break;
-            }
+        TreeNode rootNode = nodeMap.get(tree.root);
+        if (rootNode == null) {
+            return;
         }
 
-        if (rootNode != null) {
-            calculateNodePositions(rootNode, 0, 0);
-            // Add all nodes to layout
-            for (TreeNode node : nodeMap.values()) {
-                if (!treeLayout.contains(node)) {
-                    treeLayout.add(node);
-                }
-            }
-        }
+        List<TreeNode> leaves = new ArrayList<>();
+        assignLeafPositions(rootNode, 0, leaves);
+        assignInternalPositions(rootNode, 0);
+
+        treeLayout.clear();
+        collectNodesPreorder(rootNode, treeLayout);
     }
 
-    private void calculateNodePositions(TreeNode node, int depth, double xOffset) {
+    private void assignLeafPositions(TreeNode node, int depth, List<TreeNode> leaves) {
         if (node == null) return;
 
         node.y = depth * verticalSpacing;
 
         if (node.isLeaf) {
-            node.x = xOffset * horizontalSpacing;
+            node.x = leaves.size() * horizontalSpacing;
+            leaves.add(node);
             return;
         }
 
-        // Calculate positions for children
+        for (TreeNode child : node.children) {
+            assignLeafPositions(child, depth + 1, leaves);
+        }
+    }
+
+    private void assignInternalPositions(TreeNode node, int depth) {
+        if (node == null) return;
+
+        node.y = depth * verticalSpacing;
+
+        if (node.isLeaf) {
+            return;
+        }
+
+        for (TreeNode child : node.children) {
+            assignInternalPositions(child, depth + 1);
+        }
+
         if (!node.children.isEmpty()) {
-            double totalWidth = (node.children.size() - 1) * horizontalSpacing;
-            double startX = xOffset * horizontalSpacing - totalWidth / 2;
+            double minX = node.children.get(0).x;
+            double maxX = node.children.get(0).x;
 
-            for (int i = 0; i < node.children.size(); i++) {
-                TreeNode child = node.children.get(i);
-                calculateNodePositions(child, depth + 1, startX / horizontalSpacing + i);
-            }
-
-            // Position internal node at average of children
-            double avgX = 0;
             for (TreeNode child : node.children) {
-                avgX += child.x;
+                minX = Math.min(minX, child.x);
+                maxX = Math.max(maxX, child.x);
             }
-            node.x = avgX / node.children.size();
-        } else {
-            node.x = xOffset * horizontalSpacing;
+
+            node.x = (minX + maxX) / 2.0;
+        }
+    }
+
+    private void collectNodesPreorder(TreeNode node, List<TreeNode> result) {
+        if (node == null) return;
+
+        result.add(node);
+        for (TreeNode child : node.children) {
+            collectNodesPreorder(child, result);
         }
     }
 
@@ -331,6 +332,10 @@ public class Tree23GUI extends JPanel {
         zoom = 1.0;
         panX = 0;
         panY = 0;
+        setHorizontalSpacing(100);
+        setVerticalSpacing(80);
+        setNodeRadius(25);
+        setFontSize(12);
         repaint();
     }
 
@@ -372,7 +377,7 @@ public class Tree23GUI extends JPanel {
         private JTextField addField, deleteField, sizeField;
         private JTextField horizontalSpacingField, verticalSpacingField, radiusField, textSizeField;
         private JLabel statusLabel;
-        private JButton addButton, deleteButton, randomButton, degenerateButton;
+        private JButton addButton, deleteButton, randomButton;
         private Tree23 currentTree;
 
         public Tree23Frame() {
@@ -417,7 +422,7 @@ public class Tree23GUI extends JPanel {
             addField.setBackground(Color.WHITE);
             addField.setForeground(Color.BLACK);
             addField.setCaretColor(Color.BLACK);
-            addButton = createStyledButton("➕ Add", new Color(46, 204, 113));
+            addButton = createStyledButton("Add", new Color(46, 204, 113));
             addButton.addActionListener(e -> addElement());
             addPanel.add(addField);
             addPanel.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -432,7 +437,7 @@ public class Tree23GUI extends JPanel {
             deleteField.setBackground(Color.WHITE);
             deleteField.setForeground(Color.BLACK);
             deleteField.setCaretColor(Color.BLACK);
-            deleteButton = createStyledButton("🗑 Delete", new Color(231, 76, 60));
+            deleteButton = createStyledButton("Delete", new Color(231, 76, 60));
             deleteButton.addActionListener(e -> deleteElement());
             deletePanel.add(deleteField);
             deletePanel.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -448,7 +453,7 @@ public class Tree23GUI extends JPanel {
             sizeField.setBackground(Color.WHITE);
             sizeField.setForeground(Color.BLACK);
             sizeField.setCaretColor(Color.BLACK);
-            randomButton = createStyledButton("🎲 Random", new Color(52, 152, 219));
+            randomButton = createStyledButton("Random", new Color(52, 152, 219));
             randomButton.addActionListener(e -> generateRandomTree());
 
             JPanel sizePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -595,10 +600,14 @@ public class Tree23GUI extends JPanel {
             viewPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
             // Reset View Button
-            JButton resetViewButton = createStyledButton("🔄 Reset View", new Color(149, 165, 166));
+            JButton resetViewButton = createStyledButton("Reset View", new Color(149, 165, 166));
             resetViewButton.setAlignmentX(Component.CENTER_ALIGNMENT);
             resetViewButton.addActionListener(e -> {
                 treePanel.resetView();
+                horizontalSpacingField.setText(String.valueOf((int)treePanel.horizontalSpacing));
+                verticalSpacingField.setText(String.valueOf((int)treePanel.verticalSpacing));
+                radiusField.setText(String.valueOf((int)treePanel.nodeRadius));
+                textSizeField.setText(String.valueOf((int)treePanel.fontSize));
                 updateStatus("View reset");
             });
             viewPanel.add(resetViewButton);
@@ -624,7 +633,7 @@ public class Tree23GUI extends JPanel {
             controlPanel.add(Box.createVerticalGlue());
 
             // Status label
-            statusLabel = new JLabel("✓ Ready");
+            statusLabel = new JLabel("Ready");
             statusLabel.setFont(new Font("Arial", Font.ITALIC, 12));
             statusLabel.setForeground(Color.WHITE);
             statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -675,6 +684,8 @@ public class Tree23GUI extends JPanel {
             setButtonsEnabled(true);
         }
 
+
+
         private JLabel createInfoLabel(String text) {
             JLabel label = new JLabel(text);
             label.setForeground(Color.WHITE);
@@ -722,9 +733,9 @@ public class Tree23GUI extends JPanel {
         }
 
         private void updateStatus(String message) {
-            statusLabel.setText("✓ " + message);
+            statusLabel.setText(message);
             // Reset status after 2 seconds
-            Timer timer = new Timer(2000, e -> statusLabel.setText("✓ Ready"));
+            Timer timer = new Timer(2000, e -> statusLabel.setText("Ready"));
             timer.setRepeats(false);
             timer.start();
         }

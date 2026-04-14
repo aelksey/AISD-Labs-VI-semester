@@ -339,6 +339,11 @@ public class Tree23 {
     }
 
     public void insert(TreeElement elem) {
+        // Запрет дубликатов
+        if (!isEmpty(root) && find(elem) != NULL_INDEX) {
+            return;
+        }
+
         if (isEmpty(root)) {
             int l = newLeaf(elem, NULL_INDEX, NULL_INDEX);
             treeNodes[l].prev = l;

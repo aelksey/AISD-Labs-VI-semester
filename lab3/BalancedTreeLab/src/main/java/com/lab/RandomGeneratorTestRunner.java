@@ -32,7 +32,7 @@ public class RandomGeneratorTestRunner {
         randomGeneratorStressTests();
     }
 
-    // ==================== BASIC TESTS ====================
+    // Basic tests
     private static void randomGeneratorBasicTests() {
         System.out.println("--- Basic Random Tree Tests ---");
 
@@ -72,7 +72,7 @@ public class RandomGeneratorTestRunner {
         });
     }
 
-    // ==================== DEGENERATE TESTS ====================
+    // Degenerate tests
     private static void randomGeneratorDegenerateTests() {
         System.out.println("--- Degenerate Tree Tests ---");
 
@@ -117,7 +117,7 @@ public class RandomGeneratorTestRunner {
         });
     }
 
-    // ==================== VALUE ARRAY TESTS ====================
+    // Value array tests
     private static void randomGeneratorValueArrayTests() {
         System.out.println("--- Value Array Tests ---");
 
@@ -156,7 +156,7 @@ public class RandomGeneratorTestRunner {
         });
     }
 
-    // ==================== STRESS TESTS ====================
+    // Stress tests
     private static void randomGeneratorStressTests() {
         System.out.println("--- Stress Tests ---");
 
@@ -184,8 +184,7 @@ public class RandomGeneratorTestRunner {
         });
     }
 
-    // ==================== HELPER METHODS ====================
-
+    // Helper methods
     private static void test(String name, Runnable assertion) {
         try {
             assertion.run();
@@ -202,8 +201,7 @@ public class RandomGeneratorTestRunner {
         }
     }
 
-    // ==================== ASSERTION HELPERS ====================
-
+    // Assertion helpers
     private static void assertEquals(double expected, double actual, double delta) {
         if (Math.abs(expected - actual) > delta) {
             throw new AssertionError(String.format("Expected: %.2f, Actual: %.2f", expected, actual));

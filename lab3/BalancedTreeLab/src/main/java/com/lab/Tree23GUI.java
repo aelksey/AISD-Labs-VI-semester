@@ -421,7 +421,7 @@ public class Tree23GUI extends JPanel {
         private JTextField addField, deleteField, sizeField;
         private JTextField horizontalSpacingField, verticalSpacingField, radiusField, textSizeField;
         private JLabel statusLabel;
-        private JButton addButton, deleteButton, randomButton;
+        private JButton addButton, deleteButton, randomButton, clearButton;
         private Tree23 currentTree;
 
         public Tree23Frame() {
@@ -487,6 +487,17 @@ public class Tree23GUI extends JPanel {
             deletePanel.add(Box.createRigidArea(new Dimension(10, 0)));
             deletePanel.add(deleteButton);
             controlPanel.add(deletePanel);
+            controlPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
+            // Clear tree panel
+            JPanel clearPanel = createStyledPanel("Clear Tree", new Color(60, 60, 60));
+            clearButton = createStyledButton("Clear All", new Color(192, 57, 43));
+            clearButton.addActionListener(e -> clearTree());
+            JPanel clearButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            clearButtonPanel.setOpaque(false);
+            clearButtonPanel.add(clearButton);
+            clearPanel.add(clearButtonPanel);
+            controlPanel.add(clearPanel);
             controlPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
             // Iterator controls panel
@@ -830,6 +841,7 @@ public class Tree23GUI extends JPanel {
             addButton.setEnabled(enabled);
             deleteButton.setEnabled(enabled);
             randomButton.setEnabled(enabled);
+            clearButton.setEnabled(enabled);
             addField.setEnabled(enabled);
             deleteField.setEnabled(enabled);
             sizeField.setEnabled(enabled);
@@ -933,6 +945,14 @@ public class Tree23GUI extends JPanel {
             refreshVisualization();
             setButtonsEnabled(true);
             updateStatus("Generated random tree with " + size + " elements");
+        }
+
+        private void clearTree() {
+            setButtonsEnabled(false);
+            currentTree = new Tree23();
+            refreshVisualization();
+            setButtonsEnabled(true);
+            updateStatus("Tree cleared");
         }
 
         public static void main(String[] args) {

@@ -391,3 +391,5 @@ public boolean is23Tree() {
 
 **Удачи на защите!** 🍀
 ```
+
+Create a separate forward iterator class for  2-3 tree implementation in the Tree23.java class and implement it's display controls in the Tree23GUI.java class. When deleting an element referenced by the iterator, iterator should move to the next element. The tree traversal order is Inorder. Controls should be - place iterator at beginning of tree (at root), at last element, specific element by value (for leaf nodes), specific nodes by ket (for green nodes - containing keys), element of tree referenced by iterator should be highlighted by red ring.

@@ -509,90 +509,9 @@ public class Tree23GUI extends JPanel {
                     updateStatus("Iterator at beginning (empty)");
                 }
             });
-            JButton endButton = createStyledButton("End", new Color(155, 89, 182));
-            endButton.addActionListener(e -> {
-                treePanel.getIterator().end();
-                treePanel.refreshIteratorHighlight();
-                if (treePanel.getIterator().isValid()) {
-                    double key = treePanel.getIterator().getCurrentKey();
-                    boolean isLeaf = treePanel.getIterator().isCurrentLeaf();
-                    String type = isLeaf ? " (leaf)" : " (key)";
-                    updateStatus("Iterator at end: " + key + type);
-                } else {
-                    updateStatus("Iterator at end (empty)");
-                }
-            });
             beginEndPanel.add(beginButton);
-            beginEndPanel.add(endButton);
             iteratorPanel.add(beginEndPanel);
-            
-            // Goto by value
-            JPanel gotoValuePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-            gotoValuePanel.setOpaque(false);
-            JLabel gotoValueLabel = new JLabel("Goto Value:");
-            gotoValueLabel.setForeground(Color.WHITE);
-            JTextField gotoValueField = new JTextField(8);
-            gotoValueField.setFont(new Font("Arial", Font.PLAIN, 14));
-            gotoValueField.setBackground(Color.WHITE);
-            gotoValueField.setForeground(Color.BLACK);
-            gotoValueField.setCaretColor(Color.BLACK);
-            JButton gotoValueButton = createStyledButton("Go", new Color(142, 68, 173));
-            gotoValueButton.addActionListener(e -> {
-                try {
-                    double value = Double.parseDouble(gotoValueField.getText());
-                    boolean found = treePanel.getIterator().gotoByValue(value);
-                    treePanel.refreshIteratorHighlight();
-                    if (found) {
-                        boolean isLeaf = treePanel.getIterator().isCurrentLeaf();
-                        String type = isLeaf ? " (leaf)" : " (key)";
-                        updateStatus("Iterator at value: " + value + type);
-                    } else {
-                        updateStatus("Value not found: " + value);
-                    }
-                    gotoValueField.setText("");
-                } catch (NumberFormatException ex) {
-                    updateStatus("Invalid number format");
-                }
-            });
-            gotoValuePanel.add(gotoValueLabel);
-            gotoValuePanel.add(gotoValueField);
-            gotoValuePanel.add(gotoValueButton);
-            iteratorPanel.add(gotoValuePanel);
-            
-            // Goto by key index
-            JPanel gotoKeyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-            gotoKeyPanel.setOpaque(false);
-            JLabel gotoKeyLabel = new JLabel("Goto Key #:");
-            gotoKeyLabel.setForeground(Color.WHITE);
-            JTextField gotoKeyField = new JTextField(8);
-            gotoKeyField.setFont(new Font("Arial", Font.PLAIN, 14));
-            gotoKeyField.setBackground(Color.WHITE);
-            gotoKeyField.setForeground(Color.BLACK);
-            gotoKeyField.setCaretColor(Color.BLACK);
-            JButton gotoKeyButton = createStyledButton("Go", new Color(142, 68, 173));
-            gotoKeyButton.addActionListener(e -> {
-                try {
-                    int keyIndex = Integer.parseInt(gotoKeyField.getText());
-                    boolean found = treePanel.getIterator().gotoByKey(keyIndex);
-                    treePanel.refreshIteratorHighlight();
-                    if (found) {
-                        double key = treePanel.getIterator().getCurrentKey();
-                        boolean isLeaf = treePanel.getIterator().isCurrentLeaf();
-                        String type = isLeaf ? " (leaf)" : " (key)";
-                        updateStatus("Iterator at key #" + keyIndex + " = " + key + type);
-                    } else {
-                        updateStatus("Invalid key index: " + keyIndex);
-                    }
-                    gotoKeyField.setText("");
-                } catch (NumberFormatException ex) {
-                    updateStatus("Invalid number format");
-                }
-            });
-            gotoKeyPanel.add(gotoKeyLabel);
-            gotoKeyPanel.add(gotoKeyField);
-            gotoKeyPanel.add(gotoKeyButton);
-            iteratorPanel.add(gotoKeyPanel);
-            
+
             // Next and Previous buttons
             JPanel nextPrevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
             nextPrevPanel.setOpaque(false);
@@ -625,40 +544,7 @@ public class Tree23GUI extends JPanel {
             nextPrevPanel.add(nextButton);
             nextPrevPanel.add(prevButton);
             iteratorPanel.add(nextPrevPanel);
-            
-            // Delete current and get value buttons
-            JPanel deleteGetPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-            deleteGetPanel.setOpaque(false);
-            JButton deleteCurrentButton = createStyledButton("Delete Current", new Color(231, 76, 60));
-            deleteCurrentButton.addActionListener(e -> {
-                if (treePanel.getIterator().isValid()) {
-                    Tree23.ForwardIterator iter = treePanel.getIterator();
-                    iter.deleteCurrent();
-                    refreshVisualization();
-                    treePanel.refreshIteratorHighlight();
-                    if (iter.isValid()) {
-                        TreeElement elem = iter.get();
-                        updateStatus("Deleted, iterator now at: " + elem.ExtractValue());
-                    } else {
-                        updateStatus("Deleted, iterator at end");
-                    }
-                } else {
-                    updateStatus("Iterator not valid");
-                }
-            });
-            JButton getValueButton = createStyledButton("Get Value", new Color(241, 196, 15));
-            getValueButton.addActionListener(e -> {
-                if (treePanel.getIterator().isValid()) {
-                    TreeElement elem = treePanel.getIterator().get();
-                    updateStatus("Current value: " + elem.ExtractValue());
-                } else {
-                    updateStatus("Iterator not valid");
-                }
-            });
-            deleteGetPanel.add(deleteCurrentButton);
-            deleteGetPanel.add(getValueButton);
-            iteratorPanel.add(deleteGetPanel);
-            
+
             controlPanel.add(iteratorPanel);
             controlPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 

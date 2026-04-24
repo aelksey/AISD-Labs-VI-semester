@@ -1,21 +1,22 @@
-#include "iostream"
-#include "conio.h"
-#include "string"
-#include "vector"
-#include "list"
-#include "iomanip"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <list>
+#include <iomanip>
 #include <sstream>
 #include <stack>
+#include <climits>
+
+#ifdef _WIN32
+#include <conio.h>
+#endif
 
 using namespace std;
 
 int sz=0;
 
 string i_to_s(int x){
-    char buffer[20];
-    _itoa(x, buffer, 10);       
-    string s = buffer; 
-    return s;
+    return std::to_string(x);
 }
 //АТД «Дескриптор вершины графа»
 template <class NameT, class DataT> class Vertex {
@@ -362,7 +363,7 @@ public:
         ++size;
         //Обновляем дескрипторы
         for(int i = 0; i < size; ++i)
-            for(list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
+            for(typename list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
                 if((*j).v2 >= index)//если текущая вершина имеет больший номер, чем вставляемая,
                     ++((*j).v2);//то увеличиваем этот номер
         return true;
@@ -373,7 +374,7 @@ public:
 			return false;
         //Удаляем из списков записи о рёбрах
         for(int i = 0; i < size; ++i)
-            for(list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
+            for(typename list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
                 if((*j).v2 == index) {
                     edgeList[i].erase(j);
                     break;
@@ -383,7 +384,7 @@ public:
         --size;
         //Обновляем дескрипторы
         for(int i = 0; i < size; ++i)
-            for(list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
+            for(typename list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
                 if((*j).v2 > index)//если текущая вершина имеет больший номер, чем удаляемая,
                     --((*j).v2);//то уменьшить этот номер
         return true;
@@ -410,7 +411,7 @@ public:
         if(v1 == v2 || hasEdge(v1, v2) == false) 
 			return false;
         //Удаляем ребро
-        for(list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
+        for(typename list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
             if((*j).v2 == v2) {
                 edgeList[v1].erase(j);
                 break;
@@ -426,14 +427,14 @@ public:
 			return 0;
         //Удаляем связанные с вершиной рёбра
         for(int i = 0; i < size; ++i)
-            for(list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
+            for(typename list<Node>::iterator j = edgeList[i].begin(); j != edgeList[i].end(); ++j)
                 if((*j).v2 == index) {
                     delete (*j).edge;
                     edgeList[i].erase(j);
                     ++deleted;
                     //Стираем симметричное ребро
                     if(directed == false)
-                        for(list<Node>::iterator k = edgeList[index].begin(); k != edgeList[index].end(); ++k)
+                        for(typename list<Node>::iterator k = edgeList[index].begin(); k != edgeList[index].end(); ++k)
                             if((*k).v2 == i) {
                                 edgeList[index].erase(k);
                                 break;
@@ -441,7 +442,7 @@ public:
 							break;
 				}
 	    if (directed==true){
-			for(list<Node>::iterator z = edgeList[index].begin(); z != edgeList[index].end(); ++z){  
+			for(typename list<Node>::iterator z = edgeList[index].begin(); z != edgeList[index].end(); ++z){  
 				delete (*z).edge; 
 				deleted++;
 			}
@@ -457,7 +458,7 @@ public:
         //Петля
         if(v1 == v2) 
 			return false;
-        for(list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
+        for(typename list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
             if((*j).v2 == v2)
                 return true;
         return false;
@@ -470,7 +471,7 @@ public:
         //Петля
         if(v1 == v2) 
 			throw 1;
-        for(list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
+        for(typename list<Node>::iterator j = edgeList[v1].begin(); j != edgeList[v1].end(); ++j)
             if((*j).v2 == v2)
                 return (*j).edge;
         throw 1;
@@ -1276,10 +1277,10 @@ public:
         EdgeIterator(Graph<VertexT, EdgeT> &g) {
             graph = &g;
             if(graph->Dense()) {
-                mIt = new GraphMatrixForm<EdgeT>::EdgeIterator(static_cast<GraphMatrixForm<EdgeT>*>(g.data));
+                mIt = new typename GraphMatrixForm<EdgeT>::EdgeIterator(static_cast<GraphMatrixForm<EdgeT>*>(g.data));
                 useM = true;
             } else {
-                lIt = new GraphListForm<EdgeT>::EdgeIterator(static_cast<GraphListForm<EdgeT>*>(g.data));
+                lIt = new typename GraphListForm<EdgeT>::EdgeIterator(static_cast<GraphListForm<EdgeT>*>(g.data));
                 useM = false;
             }
             //begin();
@@ -1400,10 +1401,10 @@ public:
             graph = &g;
             curV1 = graph->getIndex(&v);
             if(graph->Dense()) {
-                mIt = new GraphMatrixForm<EdgeT>::OutputEdgeIterator(static_cast<GraphMatrixForm<EdgeT>*>(g.data), curV1);
+                mIt = new typename GraphMatrixForm<EdgeT>::OutputEdgeIterator(static_cast<GraphMatrixForm<EdgeT>*>(g.data), curV1);
                 useM = true;
             } else {
-                lIt = new GraphListForm<EdgeT>::OutputEdgeIterator(static_cast<GraphListForm<EdgeT>*>(g.data), curV1);
+                lIt = new typename GraphListForm<EdgeT>::OutputEdgeIterator(static_cast<GraphListForm<EdgeT>*>(g.data), curV1);
                 useM = false;
             }            
         }
@@ -1522,9 +1523,6 @@ public:
         Euler(Graph<VertexT, EdgeT> &g) {
             graph = &g;  			
         } 
-        Euler(const Graph<VertexT, EdgeT> &T) {
-            graph = T.graph;  			
-        }
 
 		~Euler() {
 			delete color,p,Adj;
@@ -1662,9 +1660,6 @@ public:
         Bellman_ford(Graph<VertexT, EdgeT> &g) {
             graph = &g; 
 			INF = 1000000000;
-        }
-        Bellman_ford(const Graph<VertexT, EdgeT> &T) {
-            graph = T.graph;  			
         }
 		~Bellman_ford () {
 			delete mtr;

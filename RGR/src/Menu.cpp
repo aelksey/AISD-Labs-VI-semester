@@ -1,6 +1,6 @@
 #include "Graph.h"
 
-void main() {
+int main() {
 	int menu;
 	bool on=false;		//Итератор исход реб
 	Graph<Vertex<string, int>, Edge<Vertex<string, int>, int, int>> *graph;
@@ -63,7 +63,7 @@ void main() {
 			break;
 				};			
 		case 4: {			//выход
-			return;
+			return 0;
 				 };			
 		default: {
 			cout<<"Ошибка ввода"<<endl;
@@ -567,8 +567,8 @@ void main() {
 			cout<<endl<<"=============================================="<<endl;			
 			break;
 				 }
-		case 40: {				//выход
-			return;
+case 40: {				//выход
+			return 0;
 				 };			
 				 break;
 		default: {
@@ -577,6 +577,5 @@ void main() {
 			break;
 		}
 	}
-	getch();
-	return;
+	return 0;
 }

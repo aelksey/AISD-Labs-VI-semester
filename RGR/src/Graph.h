@@ -1839,5 +1839,194 @@ public:
 		}
 					
 	};
+
+	//алгоритм Дейкстры для определения радиуса и центра взвешенного орграфа
+	class Dijkstra {			
+		int **mtr;
+		struct edges {
+			int a, b, cost;
+		} edg;
+		int n, m;
+		vector<edges> e;
+		int INF;
+		
+        Graph<VertexT, EdgeT> *graph; 				
+	public:			
+		typename Graph<VertexT, EdgeT>::OutputEdgeIterator *out;
+
+        Dijkstra(Graph<VertexT, EdgeT> &g) {
+            graph = &g; 
+			INF = 1000000000;
+        }
+		~Dijkstra () {
+			delete mtr;
+		}
+		
+		void search () {
+			int sz=graph->V();
+			int vv1,vv2,w;
+			for (int u=0; u<sz; u++) {
+				try {
+					out=new Graph<VertexT, EdgeT>::OutputEdgeIterator(*graph,*graph->getVertex(u));
+				}
+				catch (char *) {
+					continue;
+				}
+				if (!out->begin()) {
+					continue;
+				}
+
+				for (int j=0; j<sz; j++) {
+					try {
+						out->read_edge();
+					}
+					catch (char *) {						
+						break;
+					}
+					stringstream stream1(out->str1);
+					stream1>>vv1;
+					stringstream stream2(out->str2);
+					stream2>>vv2;
+					stringstream stream3(out->str3);
+					stream3>>w;
+					if (u==vv2) {
+						vv2=vv1;
+					}
+					
+					edg.a=u;
+					edg.b=vv2;
+					edg.cost=w;
+					e.push_back(edg);
+
+					try {
+						++*out;					
+					}
+					catch (char *) {					
+						break;
+					}									
+				}	
+			}
+		}
+		
+		string dijkstra() {			
+			search();
+			n=m=graph->E();
+						
+			mtr = new int *[n];				
+			for (int i=0; i<n; i++) {				
+				mtr[i]=new int [n];				
+				for (int j=0; j<n; j++) {
+					mtr[i][j]=INF;					
+				}				
+			}
+
+			for (int v=0; v<n; v++) {
+				vector<int> d (n, INF);
+				d[v] = 0;
+				vector<char> used (n, false);
+				
+				for (int i=0; i<n; i++) {
+					int u = -1;
+					for (int j=0; j<n; j++) {
+						if (!used[j] && (u == -1 || d[j] < d[u])) {
+							u = j;
+						}
+					}
+					if (d[u] == INF) break;
+					used[u] = true;
+					
+					for (int j=0; j<m; j++) {
+						if (e[j].a == u && d[e[j].b] > d[u] + e[j].cost) {
+							d[e[j].b] = d[u] + e[j].cost;
+						}
+					}
+				}
+
+				for (int h=0; h<n; h++) {
+					mtr[v][h]=d[h];				
+				}				
+			}
+			return centr();
+		}
+
+		string centr () {
+			int size=graph->V();
+			int *temp;
+			temp = new int [size];
+			bool wr;
+			for (int k=0; k<size; k++) {
+				temp[k]=INF;
+			}
+			for (int i=0; i<size; i++) {
+				wr=false;
+				for (int j=0; j<size; j++) {
+					if ((mtr[i][j]==INF) || mtr[i][j]==0) {
+						continue;
+					}
+					if (!wr) {
+						temp[i]=mtr[i][j];
+						wr=true;
+					}
+					else {						
+						if (temp[i]<mtr[i][j]) {
+							temp[i]=mtr[i][j];
+						}						
+					}
+				}
+			}
+			int result=0;
+			int tmp=0;	
+			tmp=temp[0];			
+			for (int u=1; u<size; u++) {
+				if (tmp>temp[u]) {
+					tmp=temp[u];
+					result=u;				
+				}
+			}	
+			if (tmp==INF || tmp==0) {
+				return "Центр не найден";
+			}
+
+			int radius = tmp;
+
+			//показать матрицу
+			cout<<endl<<"=============================================="<<endl<<"    ";
+			for (int i=0; i<size; i++) {
+				i < 10 ? cout<<i<<"  " : cout<<i<<" ";
+			}
+			if (size > 10) cout<<"\b";
+			for (int i=0; i<size-10; i++) cout<<" ";
+			for (int i=0; i<size; i++) cout<<" ";
+		 cout<<endl<<"-----------------------------------------------"<<endl;
+			for (int i=0; i<size; i++) {
+				i < 10 ? cout<<i<<" | " : cout<<i<<"| ";
+				for (int y=0; y<size; y++) {
+					if (mtr[i][y]==INF) {
+						i < 10 && y < 10 ? cout<<"-  " : (i < 10 || y < 10 ? cout<<"- " : cout<<"- ");
+					}
+					else {
+						i < 10 && y < 10 ? cout<<mtr[i][y]<<"  " : (i < 10 || y < 10 ? cout<<mtr[i][y]<<" " : cout<<mtr[i][y]);
+					}
+				}
+				if ((temp[i]==INF) || (temp[i]==0)) {
+				 cout<<"| -"<<endl;
+				}
+				else {
+				 cout<<"| "<<temp[i]<<endl;				
+				}
+			}
+
+			delete temp;
+			stringstream str;
+			string result0, radius_str;
+			str << result;
+			str >> result0;
+			stringstream ss;
+			ss << radius;
+			ss >> radius_str;
+			return "Центр графа: "+result0+", Радиус: "+radius_str;		
+		}
+					
+	};
 	
 };

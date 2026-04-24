@@ -1,4 +1,77 @@
 #include "Graph.h"
+#include <fstream>
+
+using GraphType = Graph<Vertex<string, int>, Edge<Vertex<string, int>, int, int>>;
+
+void generate_dot_file(GraphType &g, const string &filename) {
+    ofstream out(filename);
+    
+    if (g.Directed()) {
+        out << "digraph G {" << endl;
+    } else {
+        out << "graph G {" << endl;
+    }
+    
+    out << "    node [shape=box, style=filled, fillcolor=lightblue];" << endl;
+    out << "    edge [color=gray];" << endl;
+    
+    for (int i = 0; i < g.V(); i++) {
+        Vertex<string, int> *v = g.getVertex(i);
+        out << "    " << v->getName() << " [label=\"" << v->getName() << "\"];" << endl;
+    }
+    
+    for (int i = 0; i < g.V(); i++) {
+        for (int j = 0; j < g.V(); j++) {
+            if (g.hasEdge(i, j)) {
+                string v1 = g.getVertex(i)->getName();
+                string v2 = g.getVertex(j)->getName();
+                int weight = g.read_weight_edge(v1, v2);
+                
+                if (g.Directed()) {
+                    out << "    " << v1 << " -> " << v2;
+                    if (weight > 0) {
+                        out << " [label=\"" << weight << "\"]";
+                    }
+                    out << ";" << endl;
+                } else {
+                    if (i < j) {
+                        out << "    " << v1 << " -- " << v2;
+                        if (weight > 0) {
+                            out << " [label=\"" << weight << "\"]";
+                        }
+                        out << ";" << endl;
+                    }
+                }
+            }
+        }
+    }
+    
+    out << "}" << endl;
+    out.close();
+}
+
+void visualize_graph(GraphType &g) {
+    string dot_file = "graph.dot";
+    string png_file = "graph.png";
+    
+    generate_dot_file(g, dot_file);
+    cout << endl << "DOT-файл создан: " << dot_file << endl;
+    
+    string cmd = "dot -Tpng " + dot_file + " -o " + png_file;
+    int result = system(cmd.c_str());
+    
+    if (result == 0) {
+        cout << "Изображение создано: " << png_file << endl;
+        cout << "Для просмотра откройте файл в любом просмотрщике изображений" << endl;
+        
+        string open_cmd = "eog " + png_file + " &";
+        system(open_cmd.c_str());
+    } else {
+        cout << "Ошибка создания изображения. Убедитесь, что graphviz установлен." << endl;
+    }
+}
+
+using GraphType = Graph<Vertex<string, int>, Edge<Vertex<string, int>, int, int>>;
 
 int main() {
 	int menu;
@@ -119,12 +192,14 @@ int main() {
 
 		cout<<endl<<"35. Двухпроходной Эйлеров цикл"<<endl;
 		
-		cout<<endl<<"36. Алгоритм Беллмана - Форда"<<endl;
+cout<<endl<<"36. Алгоритм Беллмана - Форда"<<endl;
 
+		cout<<endl<<"99. Визуализировать граф (Graphviz)"<<endl;
+		
 		cout<<endl<<"40. Выход"<<endl;
 				
 		cout<<endl<<"Выберите операцию: ";
-		cin>>menu;		
+	cin>>menu;
 		switch (menu){
 		case 0:{			
 			graph->print_graph();
@@ -558,18 +633,22 @@ int main() {
 			cout<<endl<<"=============================================="<<endl;
 				 break;
 				 }
-		case 36: {				//определение центра взвешенного орграфа на основе алгоритма Беллмана - Форда
+case 36: {				//определение центра взвешенного орграфа на основе алгоритма Беллмана - Форда
 			BF = new Graph<Vertex<string, int>, Edge<Vertex<string, int>, int, int>>::Bellman_ford(*graph);
-			string temp;						
+			string temp;			
 			temp=BF->bellman_ford();			
 			cout<<endl<<"=============================================="<<endl;
 			cout<<endl<<"Беллман - Форд: "<<temp<<endl;	
 			cout<<endl<<"=============================================="<<endl;			
 			break;
 				 }
-case 40: {				//выход
+		case 99: {			//Визуализация графа
+			visualize_graph(*graph);
+			break;
+				 }
+		case 40: {				//выход
 			return 0;
-				 };			
+				 };
 				 break;
 		default: {
 			cout<<"Ошибка ввода"<<endl;

@@ -15,19 +15,21 @@
 ```
 hash-table-lab5/
 ├── src/
-│   ├── Main.java                          # Точка входа (запуск GUI)
+│   ├── Main.java                          # Точка входа
 │   ├── HashTable.java                     # Основной класс хеш-таблицы
-│   ├── HashTableIterator.java             # Итератор для хеш-таблицы
-│   ├── KeyTransformer.java                # Преобразование ключей
-│   ├── HashFunction.java                  # Хеш-функции
+│   ├── HashTableIterator.java             # Итератор
+│   ├── KeyTransformer.java                # Преобразователь ключей
+│   ├── HashFunction.java                  # Хеш-функция
 │   ├── QuadraticProbing.java              # Квадратичное зондирование
 │   ├── TableCell.java                     # Ячейка таблицы
-│   ├── HashTableGUI.java                  # GUI приложение
+│   ├── HashTableGUI.java                  # Главное GUI приложение (обновлён)
+│   ├── PerformanceTest.java               # Тестирование трудоёмкости ⭐
+│   ├── PerformanceChartPanel.java         # Графики трудоёмкости ⭐
+│   ├── IteratorDemoPanel.java             # Демонстрация итератора ⭐
 │   └── tests/
-│       └── HashTableTest.java             # Автотесты JUnit
-├── lib/                                    # (опционально) внешние библиотеки
-└── README.md
+│       └── HashTableTest.java             # JUnit тесты
 ```
+
 
 ## Запуск приложения
 
@@ -85,12 +87,7 @@ java -jar junit-platform-console-standalone-1.10.0.jar --class-path src --scan-c
 
 где α = n/m - коэффициент заполнения таблицы
 
-## Автор
 
-Студент группы АВТФ, направление 09.03.01 - Информатика и вычислительная техника
-```
-
----
 
 ## Инструкция по сборке и запуску
 

@@ -5,16 +5,26 @@ import java.util.function.Function;
 
 /**
  * Класс для тестирования трудоёмкости операций хеш-таблицы
- * Измеряет количество зондирований для операций поиска, вставки и удаления
+ * Адаптирован для варианта №6 (строковые ключи)
  */
 public class PerformanceTest {
 
     private final int tableSize;
     private final double targetLoadFactor;
-    private final HashTable<Double, String> hashTable;
-    private final List<Double> keys;
-    private final List<Double> allKeys;
+    private final HashTable<String, String> hashTable;
+    private final List<String> keys;
+    private final List<String> allKeys;
     private final Random random;
+
+    // Словарь для генерации случайных строк
+    private static final String LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String[] SAMPLE_WORDS = {
+            "APPLE", "BANANA", "CHERRY", "DATE", "ELDER", "FIG", "GRAPE",
+            "HONEY", "KIWI", "LEMON", "MANGO", "NUT", "ORANGE", "PAPAYA",
+            "QUINCE", "RASPBERRY", "STRAWBERRY", "TANGERINE", "UGLI",
+            "VANILLA", "WATER", "XRAY", "YELLOW", "ZEBRA", "ALPHA", "BETA",
+            "GAMMA", "DELTA", "THETA", "OMEGA", "SIGMA", "KAPPA", "LAMBDA"
+    };
 
     // Результаты тестирования
     private double avgInsertProbes;
@@ -31,15 +41,11 @@ public class PerformanceTest {
         this.allKeys = new ArrayList<>();
         this.random = new Random(42); // Фиксированный seed для воспроизводимости
 
-        // Генерация ключей
         generateKeys(expectedSize);
     }
 
-    /**
-     * Поиск простого размера таблицы
-     */
     private int findPrimeCapacity(int minCapacity) {
-        int candidate = minCapacity;
+        int candidate = Math.max(minCapacity, 8);
         while (!isPrime(candidate)) {
             candidate++;
         }
@@ -56,47 +62,37 @@ public class PerformanceTest {
         return true;
     }
 
-    /**
-     * Генерация тестовых ключей
-     */
     private void generateKeys(int count) {
-        double minKey = KeyTransformer.getMinKey();
-        double maxKey = KeyTransformer.getMaxKey();
-
         for (int i = 0; i < count; i++) {
-            // Равномерное распределение в диапазоне
-            double key = minKey + (maxKey - minKey) * random.nextDouble();
-            // Округление до 4 знаков
-            key = Math.round(key * 10000.0) / 10000.0;
+            String key = generateRandomString(random.nextInt(5) + 1); // длина от 1 до 6
             keys.add(key);
             allKeys.add(key);
         }
     }
 
-    /**
-     * Заполнение таблицы элементами
-     */
+    private String generateRandomString(int length) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(LETTERS.charAt(random.nextInt(LETTERS.length())));
+        }
+        return sb.toString();
+    }
+
     private void populateTable() {
         hashTable.clear();
-        for (Double key : keys) {
+        for (String key : keys) {
             hashTable.insert(key, "Data_" + key);
         }
     }
 
-    /**
-     * Тестирование трудоёмкости вставки
-     * @param operations количество операций
-     * @return среднее количество зондирований
-     */
     public double testInsertPerformance(int operations) {
-        HashTable<Double, String> testTable = new HashTable<>(operations);
+        HashTable<String, String> testTable = new HashTable<>(operations);
         double totalProbes = 0;
         int successfulInserts = 0;
 
-        // Создаём копию ключей для вставки
-        List<Double> testKeys = generateRandomKeys(operations);
+        List<String> testKeys = generateRandomKeys(operations);
 
-        for (Double key : testKeys) {
+        for (String key : testKeys) {
             boolean result = testTable.insert(key, "Test_" + key);
             if (result) {
                 totalProbes += testTable.getLastProbeCount();
@@ -108,11 +104,6 @@ public class PerformanceTest {
         return avgInsertProbes;
     }
 
-    /**
-     * Тестирование трудоёмкости поиска (успешного)
-     * @param operations количество операций
-     * @return среднее количество зондирований
-     */
     public double testSearchPerformance(int operations) {
         populateTable();
         double totalProbes = 0;
@@ -132,18 +123,12 @@ public class PerformanceTest {
         return avgSearchProbes;
     }
 
-    /**
-     * Тестирование трудоёмкости удаления
-     * @param operations количество операций
-     * @return среднее количество зондирований
-     */
     public double testDeletePerformance(int operations) {
         populateTable();
         double totalProbes = 0;
         int successfulDeletes = 0;
 
-        // Создаём копию ключей для удаления
-        List<Double> keysToDelete = new ArrayList<>(keys);
+        List<String> keysToDelete = new ArrayList<>(keys);
         Collections.shuffle(keysToDelete, random);
 
         for (int i = 0; i < Math.min(operations, keysToDelete.size()); i++) {
@@ -157,26 +142,15 @@ public class PerformanceTest {
         return avgDeleteProbes;
     }
 
-    /**
-     * Тестирование трудоёмкости неуспешного поиска
-     * @param operations количество операций
-     * @return среднее количество зондирований
-     */
     public double testUnsuccessfulSearchPerformance(int operations) {
         populateTable();
         double totalProbes = 0;
         int attempts = 0;
 
-        // Генерация ключей, которых нет в таблице
-        double minKey = KeyTransformer.getMinKey();
-        double maxKey = KeyTransformer.getMaxKey();
-
         for (int i = 0; i < operations; i++) {
-            // Генерируем ключ, точно отсутствующий в таблице
-            double key;
+            String key;
             do {
-                key = minKey + (maxKey - minKey) * random.nextDouble();
-                key = Math.round(key * 10000.0) / 10000.0;
+                key = generateRandomString(random.nextInt(6) + 1);
             } while (hashTable.containsKey(key));
 
             try {
@@ -191,11 +165,6 @@ public class PerformanceTest {
         return avgUnsuccessfulSearchProbes;
     }
 
-    /**
-     * Запуск полного тестирования для различных коэффициентов заполнения
-     * @param loadFactors массив коэффициентов заполнения
-     * @return результаты тестирования
-     */
     public TestResult runFullTest(double[] loadFactors, int elementsPerTest) {
         TestResult result = new TestResult();
 
@@ -209,8 +178,6 @@ public class PerformanceTest {
             entry.searchProbes = test.testSearchPerformance(elementsPerTest);
             entry.deleteProbes = test.testDeletePerformance(elementsPerTest);
             entry.unsuccessfulSearchProbes = test.testUnsuccessfulSearchPerformance(elementsPerTest);
-
-            // Теоретические оценки
             entry.theoreticalSearchSuccess = calculateTheoreticalSearchSuccess(alpha);
             entry.theoreticalSearchUnsuccess = calculateTheoreticalSearchUnsuccess(alpha);
 
@@ -220,36 +187,20 @@ public class PerformanceTest {
         return result;
     }
 
-    /**
-     * Теоретическая оценка для успешного поиска (квадратичное зондирование)
-     * ~ -ln(1-α)/α
-     */
     private double calculateTheoreticalSearchSuccess(double alpha) {
         if (alpha >= 1.0) return Double.POSITIVE_INFINITY;
         return -Math.log(1 - alpha) / alpha;
     }
 
-    /**
-     * Теоретическая оценка для неуспешного поиска (квадратичное зондирование)
-     * ~ 1/(1-α)
-     */
     private double calculateTheoreticalSearchUnsuccess(double alpha) {
         if (alpha >= 1.0) return Double.POSITIVE_INFINITY;
         return 1.0 / (1.0 - alpha);
     }
 
-    /**
-     * Генерация случайных ключей
-     */
-    private List<Double> generateRandomKeys(int count) {
-        List<Double> newKeys = new ArrayList<>();
-        double minKey = KeyTransformer.getMinKey();
-        double maxKey = KeyTransformer.getMaxKey();
-
+    private List<String> generateRandomKeys(int count) {
+        List<String> newKeys = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            double key = minKey + (maxKey - minKey) * random.nextDouble();
-            key = Math.round(key * 10000.0) / 10000.0;
-            newKeys.add(key);
+            newKeys.add(generateRandomString(random.nextInt(6) + 1));
         }
         return newKeys;
     }
@@ -259,19 +210,11 @@ public class PerformanceTest {
     public double getAvgDeleteProbes() { return avgDeleteProbes; }
     public double getAvgUnsuccessfulSearchProbes() { return avgUnsuccessfulSearchProbes; }
 
-    /**
-     * Внутренний класс для хранения результатов тестирования
-     */
     public static class TestResult {
         private final List<ResultEntry> entries = new ArrayList<>();
 
-        public void addEntry(ResultEntry entry) {
-            entries.add(entry);
-        }
-
-        public List<ResultEntry> getEntries() {
-            return entries;
-        }
+        public void addEntry(ResultEntry entry) { entries.add(entry); }
+        public List<ResultEntry> getEntries() { return entries; }
 
         public double[] getLoadFactors() {
             return entries.stream().mapToDouble(e -> e.loadFactor).toArray();
@@ -298,9 +241,6 @@ public class PerformanceTest {
         }
     }
 
-    /**
-     * Внутренний класс для записи результата
-     */
     public static class ResultEntry {
         public double loadFactor;
         public double insertProbes;

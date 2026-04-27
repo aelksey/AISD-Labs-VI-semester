@@ -9,11 +9,11 @@ import java.util.NoSuchElementException;
 
 /**
  * GUI приложение для работы с хеш-таблицей
- * Включает вкладки: Операции, Структура, Графики трудоёмкости, Итератор
+ * ВАРИАНТ №6: ключ - строка (заглавные латинские буквы)
  */
 public class HashTableGUI extends JFrame {
 
-    private HashTable<Double, String> hashTable;
+    private HashTable<String, String> hashTable;
 
     // Компоненты
     private JTextField keyField;
@@ -40,42 +40,29 @@ public class HashTableGUI extends JFrame {
     private IteratorDemoPanel iteratorPanel;
 
     public HashTableGUI() {
-        // Сначала инициализируем хеш-таблицу
         initializeHashTable();
-        // Затем инициализируем компоненты
         initComponents();
         updateDisplay();
     }
 
     private void initComponents() {
-        setTitle("Хеш-таблица с открытой адресацией - Вариант №5");
+        setTitle("Хеш-таблица с открытой адресацией - ВАРИАНТ №6");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1300, 900);
         setLocationRelativeTo(null);
 
-        // Главная панель с табуляцией
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        // Вкладка операций
         tabbedPane.addTab("Операции", createOperationsPanel());
-
-        // Вкладка отображения структуры
         tabbedPane.addTab("Структура таблицы", createDisplayPanel());
-
-        // Вкладка статистики
         tabbedPane.addTab("Статистика", createStatsPanel());
-
-        // Новая вкладка: Графики трудоёмкости
         tabbedPane.addTab("Графики трудоёмкости", createPerformancePanel());
-
-        // Новая вкладка: Итератор
         tabbedPane.addTab("Итератор", createIteratorPanel());
 
         add(tabbedPane);
 
-        // Панель статуса
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusLabel = new JLabel("Готов к работе");
+        statusLabel = new JLabel("Готов к работе. Вариант №6: строковые ключи (A-Z)");
         statusPanel.add(statusLabel);
         add(statusPanel, BorderLayout.SOUTH);
 
@@ -96,9 +83,25 @@ public class HashTableGUI extends JFrame {
 
         // Панель вставки
         JPanel insertPanel = createInputPanel("Вставка элемента",
-                new String[]{"Ключ (10000.0000 - 15000.0000):", "Значение:"},
+                new String[]{"Ключ (A-Z, заглавные):", "Значение:"},
                 new JComponent[]{keyField = new JTextField(15), valueField = new JTextField(15)},
                 e -> insertElement());
+
+        // Панель для отображения преобразования ключа
+        JPanel transformPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        transformPanel.setBorder(BorderFactory.createTitledBorder("Преобразование ключа"));
+        JTextArea transformArea = new JTextArea(3, 50);
+        transformArea.setEditable(false);
+        transformArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        JButton showTransformButton = new JButton("Показать преобразование");
+        showTransformButton.addActionListener(e -> {
+            String key = keyField.getText().trim().toUpperCase();
+            if (!key.isEmpty()) {
+                transformArea.setText(KeyTransformer.demonstrateTransformation(key));
+            }
+        });
+        transformPanel.add(showTransformButton);
+        transformPanel.add(new JScrollPane(transformArea));
 
         // Панель поиска
         JPanel searchPanel = createInputPanel("Поиск элемента",
@@ -128,7 +131,7 @@ public class HashTableGUI extends JFrame {
         controlPanel.add(refreshButton);
 
         // Информационная панель
-        JPanel infoPanel = new JPanel(new GridLayout(3, 2, 10, 5));
+        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 10, 5));
         infoPanel.setBorder(BorderFactory.createTitledBorder("Информация"));
 
         sizeLabel = new JLabel("0");
@@ -139,10 +142,12 @@ public class HashTableGUI extends JFrame {
         infoPanel.add(sizeLabel);
         infoPanel.add(new JLabel("Коэффициент заполнения α:"));
         infoPanel.add(loadFactorLabel);
+        infoPanel.add(new JLabel("Метод хеширования:"));
+        infoPanel.add(new JLabel("Мультипликативный (A≈0.618)"));
         infoPanel.add(new JLabel("Статистика последней операции:"));
         infoPanel.add(statsLabel);
 
-        // Сборка панели
+        // Сборка
         JPanel operationsPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -151,12 +156,14 @@ public class HashTableGUI extends JFrame {
         gbc.gridx = 0; gbc.gridy = 0;
         operationsPanel.add(insertPanel, gbc);
         gbc.gridy = 1;
-        operationsPanel.add(searchPanel, gbc);
+        operationsPanel.add(transformPanel, gbc);
         gbc.gridy = 2;
-        operationsPanel.add(deletePanel, gbc);
+        operationsPanel.add(searchPanel, gbc);
         gbc.gridy = 3;
-        operationsPanel.add(controlPanel, gbc);
+        operationsPanel.add(deletePanel, gbc);
         gbc.gridy = 4;
+        operationsPanel.add(controlPanel, gbc);
+        gbc.gridy = 5;
         operationsPanel.add(infoPanel, gbc);
 
         panel.add(operationsPanel, BorderLayout.NORTH);
@@ -203,7 +210,7 @@ public class HashTableGUI extends JFrame {
 
         JTextArea structureArea = new JTextArea(30, 80);
         structureArea.setEditable(false);
-        structureArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        structureArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
 
         JButton refreshButton = new JButton("Обновить структуру");
         refreshButton.addActionListener(e -> {
@@ -236,21 +243,16 @@ public class HashTableGUI extends JFrame {
         return panel;
     }
 
-    /**
-     * Создание панели для тестирования трудоёмкости и графиков
-     */
     private JPanel createPerformancePanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Верхняя панель - управление тестированием
         JPanel controlPanel = new JPanel(new GridBagLayout());
         controlPanel.setBorder(BorderFactory.createTitledBorder("Настройки тестирования"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Параметры тестирования
         gbc.gridx = 0; gbc.gridy = 0;
         controlPanel.add(new JLabel("Коэффициенты α (через запятую):"), gbc);
         gbc.gridx = 1;
@@ -263,7 +265,6 @@ public class HashTableGUI extends JFrame {
         testOperationsField = new JTextField("1000", 10);
         controlPanel.add(testOperationsField, gbc);
 
-        // Кнопки управления
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         JButton runTestButton = new JButton("Запустить тестирование");
         runTestButton.addActionListener(e -> runPerformanceTest());
@@ -277,7 +278,6 @@ public class HashTableGUI extends JFrame {
         gbc.gridwidth = 2;
         controlPanel.add(buttonPanel, gbc);
 
-        // Выбор типа графика
         JPanel chartControlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         chartControlPanel.setBorder(BorderFactory.createTitledBorder("Тип графика"));
         chartTypeCombo = new JComboBox<>(new String[]{
@@ -295,11 +295,9 @@ public class HashTableGUI extends JFrame {
         });
         chartControlPanel.add(chartTypeCombo);
 
-        // Панель для графика
         chartPanel = new PerformanceChartPanel();
         chartPanel.setPreferredSize(new Dimension(800, 450));
 
-        // Панель для вывода текстовых результатов
         performanceOutput = new JTextArea(8, 50);
         performanceOutput.setEditable(false);
         performanceOutput.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
@@ -307,7 +305,6 @@ public class HashTableGUI extends JFrame {
         outputScroll.setBorder(BorderFactory.createTitledBorder("Результаты тестирования"));
         outputScroll.setPreferredSize(new Dimension(800, 150));
 
-        // Сборка
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(controlPanel, BorderLayout.NORTH);
         topPanel.add(chartControlPanel, BorderLayout.SOUTH);
@@ -319,15 +316,10 @@ public class HashTableGUI extends JFrame {
         return panel;
     }
 
-    /**
-     * Создание панели для демонстрации итератора
-     */
     private JPanel createIteratorPanel() {
         iteratorPanel = new IteratorDemoPanel();
-        // Устанавливаем хеш-таблицу после создания
         iteratorPanel.setHashTable(hashTable);
 
-        // Добавляем кнопку синхронизации
         JButton syncButton = new JButton("Синхронизировать с текущей таблицей");
         syncButton.addActionListener(e -> {
             if (iteratorPanel != null && hashTable != null) {
@@ -346,12 +338,8 @@ public class HashTableGUI extends JFrame {
         return mainPanel;
     }
 
-    /**
-     * Запуск тестирования производительности
-     */
     private void runPerformanceTest() {
         try {
-            // Парсинг коэффициентов заполнения
             String[] alphaStrs = loadFactorsField.getText().trim().split(",");
             double[] loadFactors = new double[alphaStrs.length];
             for (int i = 0; i < alphaStrs.length; i++) {
@@ -366,7 +354,6 @@ public class HashTableGUI extends JFrame {
             statusLabel.setText("Выполняется тестирование производительности...");
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            // Запуск тестирования в отдельном потоке
             SwingWorker<PerformanceTest.TestResult, Void> worker = new SwingWorker<>() {
                 @Override
                 protected PerformanceTest.TestResult doInBackground() {
@@ -404,13 +391,12 @@ public class HashTableGUI extends JFrame {
         }
     }
 
-    /**
-     * Отображение результатов тестирования
-     */
     private void displayPerformanceResults(PerformanceTest.TestResult result) {
         StringBuilder sb = new StringBuilder();
         sb.append("========== РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ ТРУДОЁМКОСТИ ==========\n");
-        sb.append("Метод хеширования: модульный\n");
+        sb.append("Тип ключа: String (заглавные латинские буквы A-Z)\n");
+        sb.append("Преобразование: конкатенация 5-битных образов символов\n");
+        sb.append("Метод хеширования: мультипликативный\n");
         sb.append("Разрешение коллизий: квадратичное зондирование (c₁=1, c₂=1)\n");
         sb.append("Теоретические оценки:\n");
         sb.append("  - Успешный поиск: ~ -ln(1-α)/α\n");
@@ -440,9 +426,6 @@ public class HashTableGUI extends JFrame {
         performanceOutput.setText(sb.toString());
     }
 
-    /**
-     * Экспорт результатов в файл
-     */
     private void exportResults() {
         if (lastTestResult == null) {
             JOptionPane.showMessageDialog(this,
@@ -452,7 +435,7 @@ public class HashTableGUI extends JFrame {
         }
 
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setSelectedFile(new java.io.File("hash_table_performance.csv"));
+        fileChooser.setSelectedFile(new java.io.File("hash_table_performance_variant6.csv"));
         int result = fileChooser.showSaveDialog(this);
 
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -486,11 +469,11 @@ public class HashTableGUI extends JFrame {
 
     private void insertElement() {
         try {
-            String keyStr = keyField.getText().trim();
+            String key = keyField.getText().trim().toUpperCase();
             String value = valueField.getText().trim();
 
-            if (keyStr.isEmpty()) {
-                showError("Введите ключ \n Формат: число.число");
+            if (key.isEmpty()) {
+                showError("Введите ключ (заглавные латинские буквы A-Z)");
                 return;
             }
             if (value.isEmpty()) {
@@ -498,11 +481,14 @@ public class HashTableGUI extends JFrame {
                 return;
             }
 
-            double key = Double.parseDouble(keyStr);
-
             if (!KeyTransformer.isValidKey(key)) {
-                showError(String.format("Ключ должен быть в диапазоне [%.4f, %.4f]",
-                        KeyTransformer.getMinKey(), KeyTransformer.getMaxKey()));
+                showError("Ключ может содержать только заглавные латинские буквы A-Z");
+                return;
+            }
+
+            if (key.length() > KeyTransformer.getMaxKeyLength()) {
+                showError(String.format("Ключ слишком длинный (макс. %d символов)",
+                        KeyTransformer.getMaxKeyLength()));
                 return;
             }
 
@@ -510,24 +496,24 @@ public class HashTableGUI extends JFrame {
 
             if (result) {
                 statusLabel.setText("Вставка успешна");
-                displayArea.append(String.format("✓ Вставлен: %.4f → %s\n", key, value));
-                displayArea.append(hashTable.getLastOperationStats() + "\n\n");
+                displayArea.append(String.format("✓ Вставлен: %s → %s\n", key, value));
+                displayArea.append(hashTable.getLastOperationStats() + "\n");
+                displayArea.append("Битовое представление: " + hashTable.showKeyBinary(key) + "\n\n");
                 keyField.setText("");
                 valueField.setText("");
-                // Обновляем итератор
                 if (iteratorPanel != null) {
                     iteratorPanel.setHashTable(hashTable);
                 }
             } else {
                 showError("Элемент с таким ключом уже существует");
-                displayArea.append(String.format("✗ Ошибка вставки: ключ %.4f уже существует\n", key));
+                displayArea.append(String.format("✗ Ошибка вставки: ключ %s уже существует\n", key));
                 displayArea.append(hashTable.getLastOperationStats() + "\n\n");
             }
 
             updateDisplay();
 
-        } catch (NumberFormatException e) {
-            showError("Некорректный формат ключа. Введите вещественное число");
+        } catch (IllegalArgumentException e) {
+            showError(e.getMessage());
         } catch (Exception e) {
             showError("Ошибка: " + e.getMessage());
         }
@@ -535,63 +521,58 @@ public class HashTableGUI extends JFrame {
 
     private void searchElement() {
         try {
-            String keyStr = searchKeyField.getText().trim();
+            String key = searchKeyField.getText().trim().toUpperCase();
 
-            if (keyStr.isEmpty()) {
-                showError("Введите ключ для поиска \n Формат: число.число");
+            if (key.isEmpty()) {
+                showError("Введите ключ для поиска");
                 return;
             }
 
-            double key = Double.parseDouble(keyStr);
             String value = hashTable.search(key);
 
             statusLabel.setText("Поиск успешен");
-            displayArea.append(String.format("🔍 Найдено: %.4f → %s\n", key, value));
+            displayArea.append(String.format("🔍 Найдено: %s → %s\n", key, value));
             displayArea.append(hashTable.getLastOperationStats() + "\n\n");
             searchKeyField.setText("");
 
         } catch (NoSuchElementException e) {
             statusLabel.setText("Поиск: элемент не найден");
-            displayArea.append(String.format("✗ Элемент с ключом %s не найден\n", searchKeyField.getText()));
+            displayArea.append(String.format("✗ Элемент с ключом '%s' не найден\n", searchKeyField.getText()));
             displayArea.append(hashTable.getLastOperationStats() + "\n\n");
-        } catch (NumberFormatException e) {
-            showError("Некорректный формат ключа \n Формат: число.число");
-        } catch (Exception e) {
-            showError("Ошибка: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            showError(e.getMessage());
         }
     }
 
     private void deleteElement() {
         try {
-            String keyStr = deleteKeyField.getText().trim();
+            String key = deleteKeyField.getText().trim().toUpperCase();
 
-            if (keyStr.isEmpty()) {
-                showError("Введите ключ для удаления \n Формат: число.число ");
+            if (key.isEmpty()) {
+                showError("Введите ключ для удаления");
                 return;
             }
 
-            double key = Double.parseDouble(keyStr);
             boolean result = hashTable.delete(key);
 
             if (result) {
                 statusLabel.setText("Удаление успешно");
-                displayArea.append(String.format("🗑 Удалён: %.4f\n", key));
+                displayArea.append(String.format("🗑 Удалён: %s\n", key));
                 displayArea.append(hashTable.getLastOperationStats() + "\n\n");
                 deleteKeyField.setText("");
-                // Обновляем итератор
                 if (iteratorPanel != null) {
                     iteratorPanel.setHashTable(hashTable);
                 }
             } else {
                 statusLabel.setText("Удаление: элемент не найден");
-                displayArea.append(String.format("✗ Элемент с ключом %s не найден\n", deleteKeyField.getText()));
+                displayArea.append(String.format("✗ Элемент с ключом '%s' не найден\n", deleteKeyField.getText()));
                 displayArea.append(hashTable.getLastOperationStats() + "\n\n");
             }
 
             updateDisplay();
 
-        } catch (NumberFormatException e) {
-            showError("Некорректный формат ключа");
+        } catch (IllegalArgumentException e) {
+            showError(e.getMessage());
         }
     }
 
@@ -605,7 +586,6 @@ public class HashTableGUI extends JFrame {
             hashTable.clear();
             statusLabel.setText("Таблица очищена");
             displayArea.append("=== Таблица очищена ===\n\n");
-            // Обновляем итератор
             if (iteratorPanel != null) {
                 iteratorPanel.setHashTable(hashTable);
             }
@@ -617,23 +597,32 @@ public class HashTableGUI extends JFrame {
         java.util.Random rand = new java.util.Random();
         int added = 0;
 
-        double minKey = KeyTransformer.getMinKey();
-        double maxKey = KeyTransformer.getMaxKey();
+        String[] sampleWords = {
+                "APPLE", "BANANA", "CHERRY", "DATE", "ELDERBERRY",
+                "FIG", "GRAPE", "HONEYDEW", "KIWI", "LEMON",
+                "MANGO", "NECTARINE", "ORANGE", "PAPAYA", "QUINCE",
+                "RASPBERRY", "STRAWBERRY", "TANGERINE", "UGLI", "VANILLA",
+                "WATERMELON", "XANTHIUM", "YAM", "ZUCCHINI", "ALPHA"
+        };
+
+        String[] sampleValues = {
+                "Data1", "Data2", "Data3", "Data4", "Data5",
+                "Data6", "Data7", "Data8", "Data9", "Data10"
+        };
 
         for (int i = 0; i < 10; i++) {
-            double key = minKey + rand.nextDouble() * (maxKey - minKey);
-            key = Math.round(key * 10000.0) / 10000.0;
-            String value = "Data_" + (int)(rand.nextDouble() * 10000);
+            String key = sampleWords[rand.nextInt(sampleWords.length)];
+            String value = sampleValues[rand.nextInt(sampleValues.length)] + "_" + (rand.nextInt(1000));
 
             if (hashTable.insert(key, value)) {
                 added++;
-                displayArea.append(String.format("Добавлено случайное: %.4f → %s\n", key, value));
+                displayArea.append(String.format("Добавлено случайное: %s → %s\n", key, value));
+                displayArea.append(hashTable.getLastOperationStats() + "\n");
             }
         }
 
         statusLabel.setText("Добавлено " + added + " случайных элементов");
         displayArea.append("\n");
-        // Обновляем итератор
         if (iteratorPanel != null) {
             iteratorPanel.setHashTable(hashTable);
         }
@@ -656,18 +645,18 @@ public class HashTableGUI extends JFrame {
         statsTableModel.addRow(new Object[]{"Размер таблицы (ёмкость)", hashTable.capacity()});
         statsTableModel.addRow(new Object[]{"Количество элементов", hashTable.size()});
         statsTableModel.addRow(new Object[]{"Коэффициент заполнения α", String.format("%.6f", hashTable.getLoadFactor())});
-        statsTableModel.addRow(new Object[]{"Диапазон ключей",
-                String.format("[%.4f, %.4f]", KeyTransformer.getMinKey(), KeyTransformer.getMaxKey())});
-        statsTableModel.addRow(new Object[]{"Метод хеширования", "Модульный (k mod m)"});
-        statsTableModel.addRow(new Object[]{"Метод разрешения коллизий", "Квадратичное зондирование (c₁=1, c₂=1)"});
-        statsTableModel.addRow(new Object[]{"Преобразование ключей", "Свёртка + метод сложения цифр"});
+        statsTableModel.addRow(new Object[]{"Тип ключа", "String (A-Z, заглавные)"});
+        statsTableModel.addRow(new Object[]{"Преобразование ключей", "Конкатенация 5-битных образов"});
+        statsTableModel.addRow(new Object[]{"Метод хеширования", "Мультипликативный (A≈0.618)"});
+        statsTableModel.addRow(new Object[]{"Разрешение коллизий", "Квадратичное зондирование (c₁=1, c₂=1)"});
+        statsTableModel.addRow(new Object[]{"Макс. длина ключа", KeyTransformer.getMaxKeyLength()});
 
-        List<Double> keys = hashTable.getAllKeys();
+        List<String> keys = hashTable.getAllKeys();
         if (!keys.isEmpty()) {
             StringBuilder keysStr = new StringBuilder();
             for (int i = 0; i < Math.min(keys.size(), 15); i++) {
                 if (i > 0) keysStr.append(", ");
-                keysStr.append(String.format("%.4f", keys.get(i)));
+                keysStr.append(keys.get(i));
             }
             if (keys.size() > 15) keysStr.append(", ...");
             statsTableModel.addRow(new Object[]{"Ключи в таблице", keysStr.toString()});

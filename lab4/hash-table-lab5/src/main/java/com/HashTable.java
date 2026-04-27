@@ -7,22 +7,16 @@ import java.util.NoSuchElementException;
 
 /**
  * Хеш-таблица с открытой адресацией и квадратичным зондированием
- * Вариант №5: ключ - вещественное число, хеширование - модульное,
- * разрешение коллизий - квадратичное
+ * ВАРИАНТ №6: ключ - строка (заглавные латинские буквы)
  *
- * @param <K> тип ключа (Double)
+ * @param <K> тип ключа (String)
  * @param <V> тип значения
  */
-public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<K, V>> {
+public class HashTable<K extends String, V> implements Iterable<HashTable.Entry<K, V>> {
 
     // Константы для квадратичного зондирования
     private static final int C1 = 1;
     private static final int C2 = 1;
-
-    // Рекомендуемые размеры таблицы (числа Мерсенна - простые числа)
-    private static final int[] MERSENNE_PRIMES = {
-            3, 7, 31, 127, 8191, 131071, 524287, 2147483647
-    };
 
     private TableCell<K, V>[] table;
     private int size;           // Количество элементов в таблице
@@ -34,6 +28,7 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
     private long lastTransformedKey;
     private int lastHashIndex;
     private int lastProbeCount;
+    private String lastOriginalKey;
 
     /**
      * Вспомогательный класс для хранения пары ключ-значение
@@ -58,12 +53,13 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
 
     /**
      * Конструктор с заданным количеством элементов
+     * Для мультипликативного хеширования размер таблицы выбираем как степень двойки
      * @param capacity ожидаемое количество элементов
      */
     @SuppressWarnings("unchecked")
     public HashTable(int capacity) {
-        // Выбор размера таблицы: простое число, большее capacity * 2
-        this.tableSize = findPrimeSize(capacity * 2);
+        // Для мультипликативного хеширования выбираем размер как степень двойки
+        this.tableSize = nextPowerOfTwo((int)(capacity / 0.75));
         this.table = new TableCell[tableSize];
         this.size = 0;
         this.probing = new QuadraticProbing(tableSize, C1, C2);
@@ -85,34 +81,16 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
     }
 
     /**
-     * Поиск подходящего простого размера таблицы
-     * @param minCapacity минимальная ёмкость
-     * @return простой размер
+     * Нахождение следующей степени двойки
+     * @param n исходное число
+     * @return ближайшая степень двойки, не меньшая n
      */
-    private int findPrimeSize(int minCapacity) {
-        // Ищем простое число >= minCapacity
-        int candidate = minCapacity;
-        while (!isPrime(candidate)) {
-            candidate++;
+    private int nextPowerOfTwo(int n) {
+        int power = 1;
+        while (power < n) {
+            power <<= 1;
         }
-        return candidate;
-    }
-
-    /**
-     * Проверка числа на простоту
-     * @param n проверяемое число
-     * @return true если число простое
-     */
-    private boolean isPrime(int n) {
-        if (n < 2) return false;
-        if (n == 2) return true;
-        if (n % 2 == 0) return false;
-
-        int limit = (int)Math.sqrt(n);
-        for (int i = 3; i <= limit; i += 2) {
-            if (n % i == 0) return false;
-        }
-        return true;
+        return power;
     }
 
     /**
@@ -122,24 +100,32 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
         lastTransformedKey = 0;
         lastHashIndex = -1;
         lastProbeCount = 0;
+        lastOriginalKey = null;
     }
 
     /**
      * Вставка элемента в хеш-таблицу
-     * @param key ключ (вещественное число от 10000.0000 до 15000.0000)
+     * @param key ключ (строка из заглавных латинских букв)
      * @param value значение
      * @return true если вставка успешна, false если ключ уже существует
-     * @throws IllegalArgumentException если ключ вне допустимого диапазона
+     * @throws IllegalArgumentException если ключ содержит недопустимые символы
      */
     public boolean insert(K key, V value) {
         // Проверка валидности ключа
-        double doubleKey = key.doubleValue();
-        if (!KeyTransformer.isValidKey(doubleKey)) {
-            throw new IllegalArgumentException("Ключ вне допустимого диапазона: " + doubleKey);
+        if (!KeyTransformer.isValidKey(key)) {
+            throw new IllegalArgumentException(
+                    "Ключ должен состоять только из заглавных латинских букв A-Z. Получен: " + key);
         }
 
+        if (key.length() > KeyTransformer.getMaxKeyLength()) {
+            throw new IllegalArgumentException(
+                    String.format("Ключ слишком длинный (макс. %d символов)", KeyTransformer.getMaxKeyLength()));
+        }
+
+        lastOriginalKey = key;
+
         // Преобразование ключа
-        long transformedKey = KeyTransformer.transform(doubleKey);
+        long transformedKey = KeyTransformer.transform(key);
         lastTransformedKey = transformedKey;
 
         // Поиск позиции для вставки
@@ -153,7 +139,7 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
             TableCell<K, V> cell = table[index];
 
             // Если нашли существующий ключ - ошибка
-            if (cell.isActive() && doubleEquals(cell.getKey().doubleValue(), doubleKey)) {
+            if (cell.isActive() && cell.getKey().equals(key)) {
                 lastProbeCount = probeCount + 1;
                 return false;
             }
@@ -198,12 +184,12 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
      * @throws NoSuchElementException если элемент не найден
      */
     public V search(K key) {
-        double doubleKey = key.doubleValue();
-        if (!KeyTransformer.isValidKey(doubleKey)) {
-            throw new NoSuchElementException("Ключ вне допустимого диапазона: " + doubleKey);
+        if (!KeyTransformer.isValidKey(key)) {
+            throw new NoSuchElementException("Ключ содержит недопустимые символы: " + key);
         }
 
-        long transformedKey = KeyTransformer.transform(doubleKey);
+        lastOriginalKey = key;
+        long transformedKey = KeyTransformer.transform(key);
         lastTransformedKey = transformedKey;
 
         int probeCount = 0;
@@ -216,11 +202,11 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
             // Если ячейка свободна - элемент отсутствует
             if (cell.getState() == TableCell.State.FREE) {
                 lastProbeCount = probeCount + 1;
-                throw new NoSuchElementException("Элемент с ключом " + key + " не найден");
+                throw new NoSuchElementException("Элемент с ключом '" + key + "' не найден");
             }
 
             // Если ячейка занята и ключ совпадает
-            if (cell.isActive() && doubleEquals(cell.getKey().doubleValue(), doubleKey)) {
+            if (cell.isActive() && cell.getKey().equals(key)) {
                 lastProbeCount = probeCount + 1;
                 return cell.getValue();
             }
@@ -229,7 +215,21 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
         }
 
         lastProbeCount = probeCount;
-        throw new NoSuchElementException("Элемент с ключом " + key + " не найден");
+        throw new NoSuchElementException("Элемент с ключом '" + key + "' не найден");
+    }
+
+    /**
+     * Проверка наличия ключа в таблице
+     * @param key ключ
+     * @return true если ключ присутствует
+     */
+    public boolean containsKey(K key) {
+        try {
+            search(key);
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
     }
 
     /**
@@ -238,12 +238,12 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
      * @return true если удаление успешно, false если элемент не найден
      */
     public boolean delete(K key) {
-        double doubleKey = key.doubleValue();
-        if (!KeyTransformer.isValidKey(doubleKey)) {
+        if (!KeyTransformer.isValidKey(key)) {
             return false;
         }
 
-        long transformedKey = KeyTransformer.transform(doubleKey);
+        lastOriginalKey = key;
+        long transformedKey = KeyTransformer.transform(key);
         lastTransformedKey = transformedKey;
 
         int probeCount = 0;
@@ -260,7 +260,7 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
             }
 
             // Если ячейка занята и ключ совпадает
-            if (cell.isActive() && doubleEquals(cell.getKey().doubleValue(), doubleKey)) {
+            if (cell.isActive() && cell.getKey().equals(key)) {
                 cell.setState(TableCell.State.DELETED);
                 cell.setKey(null);
                 cell.setValue(null);
@@ -317,21 +317,7 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
      * @return коэффициент заполнения α = n/m
      */
     public double getLoadFactor() {
-        return (double)size / tableSize;
-    }
-
-    /**
-     * Проверка наличия ключа в таблице
-     * @param key ключ
-     * @return true если ключ присутствует
-     */
-    public boolean containsKey(K key) {
-        try {
-            search(key);
-            return true;
-        } catch (NoSuchElementException e) {
-            return false;
-        }
+        return (double) size / tableSize;
     }
 
     /**
@@ -372,13 +358,20 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
         sb.append(", элементов: ").append(size);
         sb.append(", α = ").append(String.format("%.4f", getLoadFactor()));
         sb.append(") ===\n");
+        sb.append("Метод хеширования: мультипликативный (A = ").append(String.format("%.6f", HashFunction.getA())).append(")\n");
+        sb.append("Разрешение коллизий: квадратичное зондирование (c₁=").append(C1).append(", c₂=").append(C2).append(")\n");
+        sb.append("Преобразование ключей: конкатенация 5-битных образов\n");
+        sb.append("-----------------------------------------------------------\n");
 
         for (int i = 0; i < tableSize; i++) {
-            sb.append(String.format("[%3d] ", i));
+            sb.append(String.format("[%4d] ", i));
             if (table[i].isActive()) {
-                sb.append(String.format("%.4f : %s",
-                        table[i].getKey().doubleValue(),
+                sb.append(String.format("%-12s : %s",
+                        table[i].getKey(),
                         table[i].getValue()));
+                // Показываем хеш-значение для активных элементов
+                long transformed = KeyTransformer.transform(table[i].getKey());
+                sb.append(String.format(" (k'=%d, h=%d)", transformed, probing.probe(transformed, 0)));
             } else if (table[i].getState() == TableCell.State.DELETED) {
                 sb.append("DELETED");
             } else {
@@ -395,24 +388,12 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
      */
     public String getLastOperationStats() {
         return String.format(
-                "Преобразованный ключ k' = %d | Хеш-индекс h(k') = %d | Число зондирований = %d",
-                lastTransformedKey, lastHashIndex, lastProbeCount
+                "Ключ: %s | k' = %d | Хеш-индекс h(k') = %d | Число зондирований = %d",
+                lastOriginalKey != null ? lastOriginalKey : "-",
+                lastTransformedKey,
+                lastHashIndex,
+                lastProbeCount
         );
-    }
-
-    /**
-     * Сравнение вещественных чисел с точностью 10⁻⁴
-     */
-    private boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) < 1e-4;
-    }
-
-    /**
-     * Получение внутреннего массива таблицы (для итератора)
-     * @return массив ячеек
-     */
-    public TableCell<K, V>[] getTable() {
-        return table;
     }
 
     /**
@@ -421,6 +402,28 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
      */
     public int getLastProbeCount() {
         return lastProbeCount;
+    }
+
+    /**
+     * Получение преобразованного ключа последней операции
+     */
+    public long getLastTransformedKey() {
+        return lastTransformedKey;
+    }
+
+    /**
+     * Получение исходного ключа последней операции
+     */
+    public String getLastOriginalKey() {
+        return lastOriginalKey;
+    }
+
+    /**
+     * Получение внутреннего массива таблицы (для итератора)
+     * @return массив ячеек
+     */
+    public TableCell<K, V>[] getTable() {
+        return table;
     }
 
     @Override
@@ -443,5 +446,12 @@ public class HashTable<K extends Number, V> implements Iterable<HashTable.Entry<
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    /**
+     * Показать битовое представление ключа (для отладки)
+     */
+    public String showKeyBinary(String key) {
+        return KeyTransformer.toBinaryString(key);
     }
 }

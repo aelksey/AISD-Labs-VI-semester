@@ -1,107 +1,148 @@
 package com;
 
 /**
- * Преобразователь ключей для варианта №5
+ * Преобразователь ключей для варианта №6
  *
- * Тип ключа: вещественное число на интервале [10000.0000, 15000.0000]
- * Преобразование: с точностью 10⁻⁴ и свёртка на интервал [10000, 20000]
+ * Тип ключа: строка произвольной длины (символы - заглавные латинские буквы A-Z)
+ * Преобразование: метод конкатенации битовых образов символов
+ *
+ * NBSP;Каждый символ преобразуется в 5-битный код (A=00001, B=00010, ..., Z=11010)
+ * Затем все битовые образы конкатенируются в одно большое целое число
  */
 public class KeyTransformer {
 
-    private static final double MIN_KEY = 10000.0000;
-    private static final double MAX_KEY = 15000.0000;
-    private static final double TARGET_MIN = 10000.0;
-    private static final double TARGET_MAX = 20000.0;
-    private static final int PRECISION = 10000; // 10⁻⁴
+    // Алфавит: только заглавные латинские буквы
+    private static final String VALID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final int BITS_PER_CHAR = 5;  // 2^5 = 32, достаточно для 26 букв
+    private static final int MAX_KEY_LENGTH = 12; // Максимальная длина ключа (для предотвращения переполнения)
 
     /**
-     * Преобразование вещественного ключа к целому значению k'
+     * Преобразование строкового ключа в натуральное число k'
+     * Метод конкатенации битовых образов символов
      *
-     * @param key исходный ключ (вещественное число)
-     * @return преобразованное целое значение k' в диапазоне [10000, 20000]
-     * @throws IllegalArgumentException если ключ вне допустимого диапазона
+     * @param key исходный ключ (строка из заглавных латинских букв)
+     * @return преобразованное целое значение k'
+     * @throws IllegalArgumentException если ключ содержит недопустимые символы
      */
-    public static long transform(double key) {
-        // Проверка диапазона
-        if (key < MIN_KEY - 1e-6 || key > MAX_KEY + 1e-6) {
-            throw new IllegalArgumentException(
-                    String.format("Ключ %.4f вне допустимого диапазона [%.4f, %.4f]",
-                            key, MIN_KEY, MAX_KEY)
-            );
+    public static long transform(String key) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Ключ не может быть пустым");
         }
 
-        // Шаг 1: Округление до 4 знаков после запятой (точность 10⁻⁴)
-        long scaledKey = Math.round(key * PRECISION);
+        // Проверка на допустимую длину
+        if (key.length() > MAX_KEY_LENGTH) {
+            throw new IllegalArgumentException(
+                    String.format("Ключ слишком длинный (макс. %d символов)", MAX_KEY_LENGTH));
+        }
 
-        // Шаг 2: Нормализация в диапазон [0, (MAX-MIN)*PRECISION]
-        long minScaled = Math.round(MIN_KEY * PRECISION);
-        long rangeScaled = Math.round((MAX_KEY - MIN_KEY) * PRECISION);
-        long normalized = scaledKey - minScaled;
+        long result = 0;
 
-        // Шаг 3: Свёртка (fold) в диапазон [10000, 20000]
-        long targetRange = (long)(TARGET_MAX - TARGET_MIN);
-        long folded = normalized % targetRange;
-        long result = (long)TARGET_MIN + folded;
+        for (int i = 0; i < key.length(); i++) {
+            char c = key.charAt(i);
 
-        // Дополнительная свёртка для уменьшения (метод сложения цифр)
-        result = additionalFold(result);
+            // Проверка, что символ - заглавная латинская буква
+            if (c < 'A' || c > 'Z') {
+                throw new IllegalArgumentException(
+                        String.format("Недопустимый символ '%c'. Разрешены только заглавные латинские буквы A-Z", c));
+            }
+
+            // Преобразование буквы в число: A=1, B=2, ..., Z=26
+            // Используем 5-битное представление (1 = 00001, 2 = 00010, ...)
+            int charCode = (c - 'A' + 1);  // A=1, B=2, ..., Z=26
+
+            // Конкатенация: сдвигаем текущий результат влево на 5 бит и добавляем код символа
+            result = (result << BITS_PER_CHAR) | charCode;
+        }
 
         return result;
     }
 
     /**
-     * Дополнительная свёртка - метод сложения цифр
-     * @param value исходное значение
-     * @return свёрнутое значение
+     * Альтернативный метод преобразования с битовой маской для ограничения размера
+     * Используется для предотвращения переполнения при длинных ключах
      */
-    private static long additionalFold(long value) {
-        long sum = 0;
-        long temp = value;
-        while (temp > 0) {
-            sum += temp % 10;
-            temp /= 10;
-        }
+    public static long transformWithMask(String key, int maxBits) {
+        long result = 0;
+        long mask = (1L << maxBits) - 1;
 
-        // Если сумма всё ещё велика, повторяем
-        while (sum >= 10000) {
-            long newSum = 0;
-            while (sum > 0) {
-                newSum += sum % 10;
-                sum /= 10;
+        for (int i = 0; i < key.length() && i < MAX_KEY_LENGTH; i++) {
+            char c = key.charAt(i);
+            if (c < 'A' || c > 'Z') {
+                throw new IllegalArgumentException("Недопустимый символ: " + c);
             }
-            sum = newSum;
+            int charCode = (c - 'A' + 1);
+            result = ((result << BITS_PER_CHAR) | charCode) & mask;
         }
 
-        return sum + 10000;
+        return result;
     }
 
     /**
-     * Метод для получения исходного масштабированного значения ключа
-     * @param key исходный ключ
-     * @return масштабированное значение
+     * Получение битового представления строки в виде двоичной строки (для отладки)
      */
-    public static long getScaledKey(double key) {
-        return Math.round(key * PRECISION);
+    public static String toBinaryString(String key) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < key.length(); i++) {
+            char c = key.charAt(i);
+            int charCode = (c - 'A' + 1);
+            String binary = String.format("%5s", Integer.toBinaryString(charCode)).replace(' ', '0');
+            sb.append(binary);
+            if (i < key.length() - 1) sb.append(" ");
+        }
+        return sb.toString();
     }
 
     /**
      * Проверка валидности ключа
      * @param key проверяемый ключ
-     * @return true если ключ в допустимом диапазоне
+     * @return true если ключ состоит только из заглавных латинских букв
      */
-    public static boolean isValidKey(double key) {
-        return key >= MIN_KEY - 1e-6 && key <= MAX_KEY + 1e-6;
+    public static boolean isValidKey(String key) {
+        if (key == null || key.isEmpty()) return false;
+        for (char c : key.toCharArray()) {
+            if (c < 'A' || c > 'Z') return false;
+        }
+        return true;
     }
 
     /**
-     * Получение минимального допустимого ключа
-     * @return минимальный ключ
+     * Получение максимальной длины ключа
      */
-    public static double getMinKey() { return MIN_KEY; }
+    public static int getMaxKeyLength() {
+        return MAX_KEY_LENGTH;
+    }
 
     /**
-     * Получение максимального допустимого ключа
-     * @return максимальный ключ
+     * Демонстрация преобразования (для отладки)
      */
-    public static double getMaxKey() { return MAX_KEY; }
+    public static String demonstrateTransformation(String key) {
+        if (!isValidKey(key)) {
+            return "Неверный ключ: " + key;
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append("Ключ: ").append(key).append("\n");
+        result.append("Битовые образы:\n");
+
+        for (int i = 0; i < key.length(); i++) {
+            char c = key.charAt(i);
+            int charCode = c - 'A' + 1;
+            String binary = String.format("%5s", Integer.toBinaryString(charCode)).replace(' ', '0');
+            result.append(String.format("  '%c' → %d → %s\n", c, charCode, binary));
+        }
+
+        result.append("Конкатенация: ");
+        for (int i = 0; i < key.length(); i++) {
+            char c = key.charAt(i);
+            int charCode = c - 'A' + 1;
+            result.append(String.format("%5s", Integer.toBinaryString(charCode)).replace(' ', '0'));
+            if (i < key.length() - 1) result.append("");
+        }
+        result.append("\n");
+
+        long transformed = transform(key);
+        result.append("Преобразованное значение k' = ").append(transformed);
+
+        return result.toString();
+    }
 }

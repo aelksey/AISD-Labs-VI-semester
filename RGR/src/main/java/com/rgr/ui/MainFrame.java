@@ -16,6 +16,7 @@ public class MainFrame extends JFrame {
     private JComboBox<String> formCombo;
     private JCheckBox directedCheck;
     private JCheckBox weightedCheck;
+    private JCheckBox eulerianCheck;
     private JTextField vertexCountField;
     private JTextField edgeCountField;
 
@@ -32,7 +33,7 @@ public class MainFrame extends JFrame {
         setSize(900, 700);
         setLocationRelativeTo(null);
         initUI();
-        createNewGraph(5, 5, false, false, false);
+        createNewGraph(5, 5, false, false, false, false);
     }
 
     private void initUI() {
@@ -51,6 +52,8 @@ public class MainFrame extends JFrame {
         createPanel.add(edgeCountField);
         directedCheck = new JCheckBox("Ориентированный");
         createPanel.add(directedCheck);
+        eulerianCheck = new JCheckBox("Эйлеров граф");
+        createPanel.add(eulerianCheck);
         weightedCheck = new JCheckBox("Взвешенный");
         createPanel.add(weightedCheck);
         formCombo = new JComboBox<>(new String[]{"L-граф (список)", "M-граф (матрица)"});
@@ -63,7 +66,8 @@ public class MainFrame extends JFrame {
             boolean dir = directedCheck.isSelected();
             boolean dense = formCombo.getSelectedIndex() == 1;
             boolean weighted = weightedCheck.isSelected();
-            createNewGraph(v, eCount, dir, dense, weighted);
+            boolean eulerian = eulerianCheck.isSelected();
+            createNewGraph(v, eCount, dir, dense, weighted, eulerian);
         });
         createPanel.add(createBtn);
         
@@ -75,7 +79,8 @@ public class MainFrame extends JFrame {
                 boolean dir = directedCheck.isSelected();    // используем состояние чекбокса
                 boolean dense = formCombo.getSelectedIndex() == 1;
                 boolean weighted = weightedCheck.isSelected();
-                createNewGraph(v, eCount, dir, dense, weighted);
+                boolean eulerian = eulerianCheck.isSelected();
+                createNewGraph(v, eCount, dir, dense, weighted, eulerian);
             } catch (NumberFormatException ex) {
                 resultArea.setText("Ошибка: введите целые числа в поля «Вершин» и «Рёбер»");
             }
@@ -181,8 +186,8 @@ public class MainFrame extends JFrame {
         add(scrollPane, BorderLayout.SOUTH);
     }
 
-    private void createNewGraph(int vertexCount, int edgeCount, boolean directed, boolean dense, boolean weighted) {
-        graph = new Graph<>(vertexCount, edgeCount, directed, dense);
+    private void createNewGraph(int vertexCount, int edgeCount, boolean directed, boolean dense, boolean weighted, boolean eulerian) {
+        graph = new Graph<>(vertexCount, edgeCount, directed, dense, eulerian);
         if (weighted) {
             Random rand = new Random();
             for (int i = 0; i < graph.V(); i++) {
@@ -199,7 +204,8 @@ public class MainFrame extends JFrame {
         graphPanel.setGraph(graph);
         resetIterators();
         resultArea.setText("Создан граф: |V|=" + graph.V() + ", |E|=" + graph.E() +
-                ", dir=" + directed + ", dense=" + dense + ", weighted=" + weighted);
+                ", dir=" + directed + ", dense=" + dense + ", weighted=" + weighted +
+                ", eulerian=" + eulerian);
     }
 
     private void addVertex() {

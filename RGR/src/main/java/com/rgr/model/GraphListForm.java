@@ -55,7 +55,12 @@ public class GraphListForm<V, E> extends GraphForm<V, E> {
     public boolean insertEdge(int v1, int v2, E edge) {
         int size = adjList.size();
         if (v1 < 0 || v2 < 0 || v1 >= size || v2 >= size) return false;
-        adjList.get(v1).add(new Node<>(edge, v2));
+        if (!directed) {
+            adjList.get(v1).add(new Node<>(edge, v2));
+            adjList.get(v2).add(new Node<>(edge, v1));
+        } else {
+            adjList.get(v1).add(new Node<>(edge, v2));
+        }
         return true;
     }
 
@@ -104,6 +109,11 @@ public class GraphListForm<V, E> extends GraphForm<V, E> {
         if (v1 < 0 || v2 < 0 || v1 >= adjList.size() || v2 >= adjList.size()) return false;
         for (Node<E> node : adjList.get(v1)) {
             if (node.target == v2) return true;
+        }
+        if (!directed) {
+            for (Node<E> node : adjList.get(v2)) {
+                if (node.target == v1) return true;
+            }
         }
         return false;
     }

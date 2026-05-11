@@ -31,6 +31,54 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
         this.edgeCount = 0;
     }
 
+    public Graph(int vertexCount, boolean directed, boolean dense, boolean eulerian) {
+        this(vertexCount, directed, dense);
+        if (eulerian) {
+            List<Integer> order = new ArrayList<>();
+            for (int i = 0; i < vertexCount; i++) order.add(i);
+            Collections.shuffle(order);
+            for (int i = 0; i < vertexCount; i++) {
+                int v1 = order.get(i);
+                int v2 = order.get((i + 1) % vertexCount);
+                Edge<V, W, ED> e = new Edge<>(vertices.get(v1), vertices.get(v2));
+                if (form.insertEdge(v1, v2, e)) {
+                    this.edgeCount++;
+                }
+            }
+        }
+    }
+
+    public Graph(int vertexCount, int edgeCount, boolean directed, boolean dense, boolean eulerian) {
+        this(vertexCount, directed, dense);
+        if (eulerian) {
+            List<Integer> order = new ArrayList<>();
+            for (int i = 0; i < vertexCount; i++) order.add(i);
+            Collections.shuffle(order);
+            for (int i = 0; i < vertexCount; i++) {
+                int v1 = order.get(i);
+                int v2 = order.get((i + 1) % vertexCount);
+                Edge<V, W, ED> e = new Edge<>(vertices.get(v1), vertices.get(v2));
+                if (form.insertEdge(v1, v2, e)) {
+                    this.edgeCount++;
+                }
+            }
+        } else {
+            if (edgeCount <= 0) return;
+            Random rand = new Random();
+            int maxEdges = directed ? vertexCount * (vertexCount - 1) : vertexCount * (vertexCount - 1) / 2;
+            int actualEdgeCount = Math.min(edgeCount, maxEdges);
+            while (this.edgeCount < actualEdgeCount) {
+                int v1 = rand.nextInt(vertexCount);
+                int v2 = rand.nextInt(vertexCount);
+                if (v1 == v2 || hasEdge(v1, v2)) continue;
+                Edge<V, W, ED> e = new Edge<>(vertices.get(v1), vertices.get(v2));
+                if (form.insertEdge(v1, v2, e)) {
+                    this.edgeCount++;
+                }
+            }
+        }
+    }
+
     public Graph(int vertexCount, int edgeCount, boolean directed, boolean dense) {
         this(vertexCount, directed, dense);
         if (edgeCount <= 0) return;

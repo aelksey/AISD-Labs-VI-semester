@@ -43,7 +43,6 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
             if (v1 == v2 || hasEdge(v1, v2)) continue;
             Edge<V, W, ED> e = new Edge<>(vertices.get(v1), vertices.get(v2));
             if (form.insertEdge(v1, v2, e)) {
-                if (!directed) form.insertEdge(v2, v1, e);
                 this.edgeCount++;
             }
         }
@@ -65,10 +64,8 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
             for (int j = 0; j < vertices.size(); j++) {
                 if (other.hasEdge(i, j)) {
                     Edge<V, W, ED> e = other.getEdge(i, j);
-                    // Create new edge object
                     Edge<V, W, ED> newE = new Edge<>(vertices.get(i), vertices.get(j), e.getWeight(), e.getData());
                     form.insertEdge(i, j, newE);
-                    if (!directed && i != j) form.insertEdge(j, i, newE);
                 }
             }
         }
@@ -96,7 +93,6 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
                 if (hasEdge(i, j)) {
                     Edge<V, W, ED> e = getEdge(i, j);
                     newForm.insertEdge(i, j, e);
-                    if (!directed) newForm.insertEdge(j, i, e);
                 }
             }
         }
@@ -113,7 +109,6 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
                 if (hasEdge(i, j)) {
                     Edge<V, W, ED> e = getEdge(i, j);
                     newForm.insertEdge(i, j, e);
-                    if (!directed) newForm.insertEdge(j, i, e);
                 }
             }
         }
@@ -145,6 +140,16 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
         return true;
     }
 
+    public boolean deleteVertexById(int id) {
+        for (int i = 0; i < vertices.size(); i++) {
+            if (vertices.get(i).getId() == id) {
+                deleteVertex(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Edge<V, W, ED> insertEdge(V v1, V v2) {
         int i1 = getIndex(v1);
         int i2 = getIndex(v2);
@@ -163,6 +168,22 @@ public class Graph<V extends Vertex<K, D>, K, D, W, ED> {
             if (form.deleteEdge(i1, i2, e)) {
                 edgeCount--;
                 return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean deleteEdgeById(int id) {
+        for (int i = 0; i < vertices.size(); i++) {
+            for (int j = 0; j < vertices.size(); j++) {
+                List<Edge<V, W, ED>> edges = form.getEdges(i, j);
+                for (Edge<V, W, ED> e : edges) {
+                    if (e.getId() == id) {
+                        form.deleteEdge(i, j, e);
+                        edgeCount--;
+                        return true;
+                    }
+                }
             }
         }
         return false;

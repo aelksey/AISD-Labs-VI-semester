@@ -86,6 +86,12 @@ public class MainFrame extends JFrame {
         JButton delVertexBtn = new JButton("Удалить");
         delVertexBtn.addActionListener(e -> deleteVertex(Integer.parseInt(delVertexField.getText())));
         vertexPanel.add(delVertexBtn);
+        vertexPanel.add(new JLabel("Удалить по id:"));
+        JTextField delVertexByIdField = new JTextField("0", 3);
+        vertexPanel.add(delVertexByIdField);
+        JButton delVertexByIdBtn = new JButton("Удалить");
+        delVertexByIdBtn.addActionListener(e -> deleteVertexById(Integer.parseInt(delVertexByIdField.getText())));
+        vertexPanel.add(delVertexByIdBtn);
         controlPanel.add(vertexPanel);
 
         JPanel edgePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -102,6 +108,12 @@ public class MainFrame extends JFrame {
         JButton delEdgeBtn = new JButton("Удалить ребро");
         delEdgeBtn.addActionListener(e -> deleteEdge(Integer.parseInt(fromField.getText()), Integer.parseInt(toField.getText())));
         edgePanel.add(delEdgeBtn);
+        edgePanel.add(new JLabel("Удалить ребро по id:"));
+        JTextField delEdgeByIdField = new JTextField("0", 3);
+        edgePanel.add(delEdgeByIdField);
+        JButton delEdgeByIdBtn = new JButton("Удалить");
+        delEdgeByIdBtn.addActionListener(e -> deleteEdgeById(Integer.parseInt(delEdgeByIdField.getText())));
+        edgePanel.add(delEdgeByIdBtn);
         controlPanel.add(edgePanel);
 
         JPanel taskPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -168,6 +180,15 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void deleteVertexById(int id) {
+        if (graph.deleteVertexById(id)) {
+            graphPanel.setGraph(graph);
+            resultArea.setText("Удалена вершина по id=" + id);
+        } else {
+            resultArea.setText("Вершина с id=" + id + " не найдена");
+        }
+    }
+
     private void addEdge(int from, int to, int weight) {
         if (from >= 0 && from < graph.V() && to >= 0 && to < graph.V()) {
             try {
@@ -197,6 +218,15 @@ public class MainFrame extends JFrame {
             }
         } else {
             resultArea.setText("Неверные индексы");
+        }
+    }
+
+    private void deleteEdgeById(int id) {
+        if (graph.deleteEdgeById(id)) {
+            graphPanel.repaint();
+            resultArea.setText("Удалено ребро по id=" + id);
+        } else {
+            resultArea.setText("Ребро с id=" + id + " не найдено");
         }
     }
 

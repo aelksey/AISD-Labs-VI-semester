@@ -1,6 +1,8 @@
 package com.rgr.model;
 
 public class Edge<V, W, D> {
+    private static int nextId = 0;
+    private final int id;
     private V source;
     private V target;
     private W weight;
@@ -9,6 +11,7 @@ public class Edge<V, W, D> {
     private boolean dataSet;
 
     public Edge(V source, V target) {
+        this.id = nextId++;
         this.source = source;
         this.target = target;
         this.weightSet = false;
@@ -26,6 +29,8 @@ public class Edge<V, W, D> {
         this.data = data;
         this.dataSet = true;
     }
+
+    public int getId() { return id; }
 
     public V getSource() { return source; }
     public V getTarget() { return target; }

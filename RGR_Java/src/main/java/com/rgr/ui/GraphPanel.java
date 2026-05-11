@@ -63,7 +63,8 @@ public class GraphPanel extends JPanel {
                     double dx = screenPos.getX() - p.getX();
                     double dy = screenPos.getY() - p.getY();
                     if (dx * dx + dy * dy <= VERTEX_HIT_RADIUS * VERTEX_HIT_RADIUS) {
-                        String msg = "Вершина: " + v.getName();
+                        int idx = graph.getIndex(v);
+                        String msg = "id=" + v.getId() + ", index=" + idx + ", name=" + v.getName();
                         if (v.isDataSet()) msg += ", Данные: " + v.getData();
                         JOptionPane.showMessageDialog(GraphPanel.this, msg,
                                 "Информация о вершине", JOptionPane.INFORMATION_MESSAGE);
@@ -89,8 +90,8 @@ public class GraphPanel extends JPanel {
                             double dy = spLoop.getY() - p.getY();
                             if (Math.hypot(dx, dy) < VERTEX_RADIUS + LOOP_OFFSET / 2) {
                                 Edge<?, ?, ?> eObj = edges.get(0);
-                                String msg = "Петля на вершине " + v1.getName();
-                                if (eObj.isWeightSet()) msg += ", вес = " + eObj.getWeight();
+                                String msg = "Петля: id=" + eObj.getId() + ", vertex index=" + graph.getIndex(v1);
+                                if (eObj.isWeightSet()) msg += ", вес=" + eObj.getWeight();
                                 JOptionPane.showMessageDialog(GraphPanel.this, msg,
                                         "Информация о ребре", JOptionPane.INFORMATION_MESSAGE);
                                 return;
@@ -106,9 +107,9 @@ public class GraphPanel extends JPanel {
                                 sp1.getX(), sp1.getY(), sp2.getX(), sp2.getY());
                         if (dist < EDGE_HIT_DIST) {
                             Edge<?, ?, ?> eObj = edges.get(0);
-                            String dir = graph.isDirected() ? " → " : " — ";
-                            String msg = "Ребро: " + v1.getName() + dir + v2.getName();
-                            if (eObj.isWeightSet()) msg += ", вес = " + eObj.getWeight();
+                            String dir = graph.isDirected() ? " -> " : " -- ";
+                            String msg = "Edge id=" + eObj.getId() + ": " + v1.getName() + dir + v2.getName();
+                            if (eObj.isWeightSet()) msg += ", вес=" + eObj.getWeight();
                             JOptionPane.showMessageDialog(GraphPanel.this, msg,
                                     "Информация о ребре", JOptionPane.INFORMATION_MESSAGE);
                             return;
@@ -228,40 +229,31 @@ public class GraphPanel extends JPanel {
 
     public void setGraph(Graph<Vertex<String, Integer>, String, Integer, Integer, Integer> g) {
         this.graph = g;
-        randomizePositions();
-        repaint();
-    }
-
-    private void randomizePositions() {
-        vertexPositions.clear();
+        Map<Vertex<String, Integer>, Point> oldPositions = vertexPositions;
+        vertexPositions = new HashMap<>();
+        
         int w = getWidth();
         int h = getHeight();
         if (w <= 0) w = 800;
         if (h <= 0) h = 600;
         int margin = 60;
         Random rand = new Random();
-        List<Point> points = new ArrayList<>();
+        
         for (int i = 0; i < graph.V(); i++) {
-            Point p;
-            int attempts = 0;
-            do {
+            Vertex<String, Integer> v = graph.getVertex(i);
+            Point oldPos = oldPositions.get(v);
+            if (oldPos != null) {
+                vertexPositions.put(v, oldPos);
+            } else {
                 int x = margin + rand.nextInt(w - 2 * margin);
                 int y = margin + rand.nextInt(h - 2 * margin);
-                p = new Point(x, y);
-                boolean ok = true;
-                for (Point existing : points) {
-                    if (Math.hypot(p.x - existing.x, p.y - existing.y) < VERTEX_RADIUS * 2.5) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) break;
-                if (++attempts > 500) break;
-            } while (true);
-            points.add(p);
-            vertexPositions.put(graph.getVertex(i), p);
+                vertexPositions.put(v, new Point(x, y));
+            }
         }
+        repaint();
     }
+
+    
 
     public void resetView() {
         translateX = 0;
@@ -442,7 +434,20 @@ public class GraphPanel extends JPanel {
     public void setBounds(int x, int y, int width, int height) {
         super.setBounds(x, y, width, height);
         if (graph != null && vertexPositions.isEmpty()) {
-            randomizePositions();
+            Map<Vertex<String, Integer>, Point> oldPositions = vertexPositions;
+            vertexPositions = new HashMap<>();
+            int w = getWidth();
+            int h = getHeight();
+            if (w <= 0) w = 800;
+            if (h <= 0) h = 600;
+            int margin = 60;
+            Random rand = new Random();
+            for (int i = 0; i < graph.V(); i++) {
+                Vertex<String, Integer> v = graph.getVertex(i);
+                int px = margin + rand.nextInt(w - 2 * margin);
+                int py = margin + rand.nextInt(h - 2 * margin);
+                vertexPositions.put(v, new Point(px, py));
+            }
         }
     }
 }

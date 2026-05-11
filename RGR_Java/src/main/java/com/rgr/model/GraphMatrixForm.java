@@ -43,11 +43,7 @@ public class GraphMatrixForm<V, E> extends GraphForm<V, E> {
     public boolean insertEdge(int v1, int v2, E edge) {
         int size = matrix.size();
         if (v1 < 0 || v2 < 0 || v1 >= size || v2 >= size) return false;
-        // Allow loops and multiple edges
         matrix.get(v1).get(v2).add(edge);
-        if (!directed && v1 != v2) {
-            matrix.get(v2).get(v1).add(edge);
-        }
         return true;
     }
 
@@ -55,11 +51,7 @@ public class GraphMatrixForm<V, E> extends GraphForm<V, E> {
     public boolean deleteEdge(int v1, int v2, E edge) {
         int size = matrix.size();
         if (v1 < 0 || v2 < 0 || v1 >= size || v2 >= size) return false;
-        boolean removed = matrix.get(v1).get(v2).remove(edge);
-        if (!directed && v1 != v2 && removed) {
-            matrix.get(v2).get(v1).remove(edge);
-        }
-        return removed;
+        return matrix.get(v1).get(v2).remove(edge);
     }
 
     @Override
@@ -67,12 +59,10 @@ public class GraphMatrixForm<V, E> extends GraphForm<V, E> {
         int size = matrix.size();
         if (index < 0 || index >= size) return 0;
         int deleted = 0;
-        // Remove outgoing
         for (int j = 0; j < size; j++) {
             deleted += matrix.get(index).get(j).size();
             matrix.get(index).get(j).clear();
         }
-        // Remove incoming (for undirected, symmetric already cleaned, but for directed we need to clean incoming)
         if (directed) {
             for (int i = 0; i < size; i++) {
                 if (i != index) {

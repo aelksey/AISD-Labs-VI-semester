@@ -55,11 +55,7 @@ public class GraphListForm<V, E> extends GraphForm<V, E> {
     public boolean insertEdge(int v1, int v2, E edge) {
         int size = adjList.size();
         if (v1 < 0 || v2 < 0 || v1 >= size || v2 >= size) return false;
-        // allow loops, allow multiple edges
         adjList.get(v1).add(new Node<>(edge, v2));
-        if (!directed && v1 != v2) {
-            adjList.get(v2).add(new Node<>(edge, v1));
-        }
         return true;
     }
 
@@ -73,18 +69,6 @@ public class GraphListForm<V, E> extends GraphForm<V, E> {
             Node<E> node = it.next();
             if (node.target == v2 && node.edge.equals(edge)) {
                 it.remove();
-                if (!directed && v1 != v2) {
-                    // Also remove the symmetric edge with same reference
-                    LinkedList<Node<E>> list2 = adjList.get(v2);
-                    Iterator<Node<E>> it2 = list2.iterator();
-                    while (it2.hasNext()) {
-                        Node<E> node2 = it2.next();
-                        if (node2.target == v1 && node2.edge.equals(edge)) {
-                            it2.remove();
-                            break;
-                        }
-                    }
-                }
                 return true;
             }
         }
@@ -96,22 +80,22 @@ public class GraphListForm<V, E> extends GraphForm<V, E> {
         int size = adjList.size();
         if (index < 0 || index >= size) return 0;
         int deleted = 0;
-        // Remove incoming edges
-        for (int i = 0; i < size; i++) {
-            LinkedList<Node<E>> list = adjList.get(i);
-            Iterator<Node<E>> it = list.iterator();
-            while (it.hasNext()) {
-                Node<E> node = it.next();
-                if (node.target == index) {
-                    it.remove();
-                    deleted++;
+        deleted += adjList.get(index).size();
+        adjList.get(index).clear();
+        if (directed) {
+            for (int i = 0; i < size; i++) {
+                if (i == index) continue;
+                LinkedList<Node<E>> list = adjList.get(i);
+                Iterator<Node<E>> it = list.iterator();
+                while (it.hasNext()) {
+                    Node<E> node = it.next();
+                    if (node.target == index) {
+                        it.remove();
+                        deleted++;
+                    }
                 }
             }
         }
-        // Remove outgoing edges
-        deleted += adjList.get(index).size();
-        adjList.get(index).clear();
-        // For undirected, we've already removed symmetric edges as incoming above
         return deleted;
     }
 

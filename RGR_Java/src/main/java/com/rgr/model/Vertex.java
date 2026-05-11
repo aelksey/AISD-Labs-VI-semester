@@ -1,22 +1,28 @@
 package com.rgr.model;
 
 public class Vertex<K, D> {
+    private static int nextId = 0;
+    private final int id;
     private K name;
     private D data;
     private boolean nameSet;
     private boolean dataSet;
 
     public Vertex() {
+        this.id = nextId++;
         this.nameSet = false;
         this.dataSet = false;
     }
 
     public Vertex(K name, D data) {
+        this();
         this.name = name;
         this.data = data;
         this.nameSet = true;
         this.dataSet = true;
     }
+
+    public int getId() { return id; }
 
     public void setName(K name) {
         this.name = name;

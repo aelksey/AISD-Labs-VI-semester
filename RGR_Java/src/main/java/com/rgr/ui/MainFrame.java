@@ -23,7 +23,7 @@ public class MainFrame extends JFrame {
         setSize(900, 700);
         setLocationRelativeTo(null);
         initUI();
-        createNewGraph(5, 0, false, false, false);
+        createNewGraph(5, 5, false, false, false);
     }
 
     private void initUI() {
@@ -38,7 +38,7 @@ public class MainFrame extends JFrame {
         vertexCountField = new JTextField("5", 3);
         createPanel.add(vertexCountField);
         createPanel.add(new JLabel("Рёбер:"));
-        edgeCountField = new JTextField("0", 3);
+        edgeCountField = new JTextField("5", 3);
         createPanel.add(edgeCountField);
         directedCheck = new JCheckBox("Ориентированный");
         createPanel.add(directedCheck);

@@ -5,7 +5,9 @@ import com.rgr.tasks.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 import java.util.Random;
+import java.util.NoSuchElementException;
 
 public class MainFrame extends JFrame {
     private Graph<Vertex<String, Integer>, String, Integer, Integer, Integer> graph;
@@ -13,9 +15,16 @@ public class MainFrame extends JFrame {
     private JTextArea resultArea;
     private JComboBox<String> formCombo;
     private JCheckBox directedCheck;
-    private JCheckBox weightedCheck;  // новый чекбокс
+    private JCheckBox weightedCheck;
     private JTextField vertexCountField;
     private JTextField edgeCountField;
+
+    private Graph<Vertex<String, Integer>, String, Integer, Integer, Integer>.VertexIterator vertexIter;
+    private Graph<Vertex<String, Integer>, String, Integer, Integer, Integer>.EdgeIterator edgeIter;
+    private Vertex<String, Integer> currentVertex;
+    private Edge<Vertex<String, Integer>, Integer, Integer> currentEdge;
+    private JLabel vertexIterLabel;
+    private JLabel edgeIterLabel;
 
     public MainFrame() {
         setTitle("РГР: Простой граф - Эйлеров цикл и Радиус орграфа");
@@ -131,6 +140,35 @@ public class MainFrame extends JFrame {
         taskPanel.add(resetViewBtn);
         controlPanel.add(taskPanel);
 
+        JPanel iterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        iterPanel.setBorder(BorderFactory.createTitledBorder("Итераторы"));
+        JButton nextVertexBtn = new JButton("Вершина Next");
+        nextVertexBtn.addActionListener(e -> nextVertex());
+        iterPanel.add(nextVertexBtn);
+        JButton resetVertexBtn = new JButton("Сброс");
+        resetVertexBtn.addActionListener(e -> resetVertexIter());
+        iterPanel.add(resetVertexBtn);
+        JButton clearVertexBtn = new JButton("Очистить");
+        clearVertexBtn.addActionListener(e -> clearVertexIter());
+        iterPanel.add(clearVertexBtn);
+        vertexIterLabel = new JLabel("Текущая: none");
+        iterPanel.add(vertexIterLabel);
+
+        iterPanel.add(Box.createHorizontalStrut(20));
+
+        JButton nextEdgeBtn = new JButton("Ребро Next");
+        nextEdgeBtn.addActionListener(e -> nextEdge());
+        iterPanel.add(nextEdgeBtn);
+        JButton resetEdgeBtn = new JButton("Сброс");
+        resetEdgeBtn.addActionListener(e -> resetEdgeIter());
+        iterPanel.add(resetEdgeBtn);
+        JButton clearEdgeBtn = new JButton("Очистить");
+        clearEdgeBtn.addActionListener(e -> clearEdgeIter());
+        iterPanel.add(clearEdgeBtn);
+        edgeIterLabel = new JLabel("Текущее: none");
+        iterPanel.add(edgeIterLabel);
+        controlPanel.add(iterPanel);
+
         add(controlPanel, BorderLayout.NORTH);
 
         graphPanel = new GraphPanel();
@@ -145,7 +183,6 @@ public class MainFrame extends JFrame {
 
     private void createNewGraph(int vertexCount, int edgeCount, boolean directed, boolean dense, boolean weighted) {
         graph = new Graph<>(vertexCount, edgeCount, directed, dense);
-        // Если граф взвешенный, назначаем случайные веса всем рёбрам
         if (weighted) {
             Random rand = new Random();
             for (int i = 0; i < graph.V(); i++) {
@@ -153,13 +190,14 @@ public class MainFrame extends JFrame {
                     if (graph.hasEdge(i, j)) {
                         Edge<Vertex<String, Integer>, Integer, Integer> e = graph.getEdge(i, j);
                         if (e != null && !e.isWeightSet()) {
-                            e.setWeight(rand.nextInt(9) + 1); // вес от 1 до 9
+                            e.setWeight(rand.nextInt(9) + 1);
                         }
                     }
                 }
             }
         }
         graphPanel.setGraph(graph);
+        resetIterators();
         resultArea.setText("Создан граф: |V|=" + graph.V() + ", |E|=" + graph.E() +
                 ", dir=" + directed + ", dense=" + dense + ", weighted=" + weighted);
     }
@@ -172,6 +210,10 @@ public class MainFrame extends JFrame {
 
     private void deleteVertex(int idx) {
         if (idx >= 0 && idx < graph.V()) {
+            Vertex<String, Integer> v = graph.getVertex(idx);
+            if (currentVertex == v) {
+                advanceVertexIterator();
+            }
             graph.deleteVertex(idx);
             graphPanel.setGraph(graph);
             resultArea.setText("Удалена вершина " + idx);
@@ -181,7 +223,18 @@ public class MainFrame extends JFrame {
     }
 
     private void deleteVertexById(int id) {
-        if (graph.deleteVertexById(id)) {
+        Vertex<String, Integer> toDelete = null;
+        for (int i = 0; i < graph.V(); i++) {
+            if (graph.getVertex(i).getId() == id) {
+                toDelete = graph.getVertex(i);
+                break;
+            }
+        }
+        if (toDelete != null) {
+            if (currentVertex == toDelete) {
+                advanceVertexIterator();
+            }
+            graph.deleteVertexById(id);
             graphPanel.setGraph(graph);
             resultArea.setText("Удалена вершина по id=" + id);
         } else {
@@ -213,6 +266,14 @@ public class MainFrame extends JFrame {
 
     private void deleteEdge(int from, int to) {
         if (from >= 0 && from < graph.V() && to >= 0 && to < graph.V()) {
+            if (!graph.hasEdge(from, to)) {
+                resultArea.setText("Ребро не существует");
+                return;
+            }
+            Edge<Vertex<String, Integer>, Integer, Integer> edge = graph.getEdge(from, to);
+            if (currentEdge == edge) {
+                advanceEdgeIterator();
+            }
             if (graph.deleteEdge(graph.getVertex(from), graph.getVertex(to))) {
                 graphPanel.repaint();
                 resultArea.setText("Удалено ребро " + from + "->" + to);
@@ -225,9 +286,34 @@ public class MainFrame extends JFrame {
     }
 
     private void deleteEdgeById(int id) {
-        if (graph.deleteEdgeById(id)) {
-            graphPanel.repaint();
-            resultArea.setText("Удалено ребро по id=" + id);
+        if (id < 0) {
+            resultArea.setText("Неверный id ребра");
+            return;
+        }
+        Edge<Vertex<String, Integer>, Integer, Integer> edgeToDelete = null;
+        for (int i = 0; i < graph.V(); i++) {
+            for (int j = 0; j < graph.V(); j++) {
+                List<Edge<Vertex<String, Integer>, Integer, Integer>> edges = graph.getEdges(i, j);
+                for (Edge<Vertex<String, Integer>, Integer, Integer> e : edges) {
+                    if (e.getId() == id) {
+                        edgeToDelete = e;
+                        break;
+                    }
+                }
+                if (edgeToDelete != null) break;
+            }
+            if (edgeToDelete != null) break;
+        }
+        if (edgeToDelete != null) {
+            if (currentEdge == edgeToDelete) {
+                advanceEdgeIterator();
+            }
+            if (graph.deleteEdgeById(id)) {
+                graphPanel.repaint();
+                resultArea.setText("Удалено ребро по id=" + id);
+            } else {
+                resultArea.setText("Ребро с id=" + id + " не найдено");
+            }
         } else {
             resultArea.setText("Ребро с id=" + id + " не найдено");
         }
@@ -278,5 +364,139 @@ public class MainFrame extends JFrame {
         else graph.toMatrixGraph();
         graphPanel.setGraph(graph);
         resultArea.setText("Форма представления изменена на " + (graph.isDense() ? "M-граф" : "L-граф"));
+    }
+
+    private void resetIterators() {
+        vertexIter = graph.new VertexIterator();
+        edgeIter = graph.new EdgeIterator();
+        currentVertex = null;
+        currentEdge = null;
+        graphPanel.clearIteratorHighlight();
+        updateVertexIterLabel();
+        updateEdgeIterLabel();
+    }
+
+    private void nextVertex() {
+        if (graph.V() == 0) {
+            resultArea.setText("Граф не содержит вершин");
+            return;
+        }
+        if (currentVertex == null) {
+            if (vertexIter.hasNext()) {
+                currentVertex = vertexIter.next();
+                graphPanel.setIteratorVertex(currentVertex);
+                graphPanel.repaint();
+                updateVertexIterLabel();
+            }
+        } else {
+            if (vertexIter.hasNext()) {
+                currentVertex = vertexIter.next();
+                graphPanel.setIteratorVertex(currentVertex);
+                graphPanel.repaint();
+                updateVertexIterLabel();
+            } else {
+                resultArea.setText("Конец итератора вершин");
+            }
+        }
+    }
+
+    private void advanceVertexIterator() {
+        if (vertexIter != null && vertexIter.hasNext()) {
+            currentVertex = vertexIter.next();
+            graphPanel.setIteratorVertex(currentVertex);
+        } else {
+            currentVertex = null;
+            graphPanel.clearIteratorHighlight();
+        }
+        graphPanel.repaint();
+        updateVertexIterLabel();
+    }
+
+    private void resetVertexIter() {
+        vertexIter = graph.new VertexIterator();
+        currentVertex = null;
+        graphPanel.clearIteratorHighlight();
+        graphPanel.repaint();
+        updateVertexIterLabel();
+        resultArea.setText("Итератор вершин сброшен");
+    }
+
+    private void clearVertexIter() {
+        currentVertex = null;
+        graphPanel.setIteratorVertex(null);
+        graphPanel.repaint();
+        updateVertexIterLabel();
+    }
+
+    private void updateVertexIterLabel() {
+        if (currentVertex != null) {
+            int idx = graph.getIndex(currentVertex);
+            vertexIterLabel.setText("Текущая: " + currentVertex.getName() + " (id=" + currentVertex.getId() + ", idx=" + idx + ")");
+        } else {
+            vertexIterLabel.setText("Текущая: none");
+        }
+    }
+
+    private void nextEdge() {
+        if (graph.E() == 0) {
+            resultArea.setText("Граф не содержит рёбер");
+            return;
+        }
+        if (currentEdge == null) {
+            if (edgeIter.hasNext()) {
+                currentEdge = edgeIter.next();
+                graphPanel.setIteratorEdge(currentEdge);
+                graphPanel.repaint();
+                updateEdgeIterLabel();
+            }
+        } else {
+            if (edgeIter.hasNext()) {
+                currentEdge = edgeIter.next();
+                graphPanel.setIteratorEdge(currentEdge);
+                graphPanel.repaint();
+                updateEdgeIterLabel();
+            } else {
+                resultArea.setText("Конец итератора рёбер");
+            }
+        }
+    }
+
+    private void advanceEdgeIterator() {
+        if (edgeIter != null && edgeIter.hasNext()) {
+            currentEdge = edgeIter.next();
+            graphPanel.setIteratorEdge(currentEdge);
+        } else {
+            currentEdge = null;
+            graphPanel.clearIteratorHighlight();
+        }
+        graphPanel.repaint();
+        updateEdgeIterLabel();
+    }
+
+    private void resetEdgeIter() {
+        edgeIter = graph.new EdgeIterator();
+        currentEdge = null;
+        graphPanel.clearIteratorHighlight();
+        graphPanel.repaint();
+        updateEdgeIterLabel();
+        resultArea.setText("Итератор рёбер сброшен");
+    }
+
+    private void clearEdgeIter() {
+        currentEdge = null;
+        graphPanel.setIteratorEdge(null);
+        graphPanel.repaint();
+        updateEdgeIterLabel();
+    }
+
+    private void updateEdgeIterLabel() {
+        if (currentEdge != null) {
+            String dir = graph.isDirected() ? " -> " : " -- ";
+            String weightInfo = currentEdge.isWeightSet() ? ", вес=" + currentEdge.getWeight() : "";
+            edgeIterLabel.setText("Текущее: " + currentEdge.getSource().getName() + dir + currentEdge.getTarget().getName() +
+                    " (id=" + currentEdge.getId() + ")" + weightInfo);
+        } else {
+            edgeIterLabel.setText("Текущее: none");
+        }
     }
 }

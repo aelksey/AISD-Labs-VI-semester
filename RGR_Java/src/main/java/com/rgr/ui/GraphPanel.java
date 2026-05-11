@@ -28,6 +28,10 @@ public class GraphPanel extends JPanel {
     private Vertex<String, Integer> hoverVertex = null;
     private Edge<Vertex<String, Integer>, Integer, Integer> hoverEdge = null;
 
+    // Iterator highlight
+    private Vertex<String, Integer> iteratorVertex = null;
+    private Edge<Vertex<String, Integer>, Integer, Integer> iteratorEdge = null;
+
     public GraphPanel() {
         setBackground(Color.WHITE);
         setPreferredSize(new Dimension(800, 600));
@@ -227,6 +231,33 @@ public class GraphPanel extends JPanel {
         if (changed) repaint();
     }
 
+    public void clearIteratorHighlight() {
+        iteratorVertex = null;
+        iteratorEdge = null;
+        repaint();
+    }
+
+    public void setIteratorVertex(Vertex<String, Integer> v) {
+        iteratorVertex = v;
+        iteratorEdge = null;
+        repaint();
+    }
+
+    public void setIteratorEdge(Edge<Vertex<String, Integer>, Integer, Integer> e) {
+        iteratorEdge = e;
+        iteratorVertex = null;
+        repaint();
+    }
+
+    public void clearHighlight() {
+        hoverVertex = null;
+        hoverEdge = null;
+        repaint();
+    }
+
+    public Vertex<String, Integer> getIteratorVertex() { return iteratorVertex; }
+    public Edge<Vertex<String, Integer>, Integer, Integer> getIteratorEdge() { return iteratorEdge; }
+
     public void setGraph(Graph<Vertex<String, Integer>, String, Integer, Integer, Integer> g) {
         this.graph = g;
         Map<Vertex<String, Integer>, Point> oldPositions = vertexPositions;
@@ -239,8 +270,8 @@ public class GraphPanel extends JPanel {
         int margin = 60;
         Random rand = new Random();
         
-        for (int i = 0; i < graph.V(); i++) {
-            Vertex<String, Integer> v = graph.getVertex(i);
+        for (int i = 0; i < g.V(); i++) {
+            Vertex<String, Integer> v = g.getVertex(i);
             Point oldPos = oldPositions.get(v);
             if (oldPos != null) {
                 vertexPositions.put(v, oldPos);
@@ -308,9 +339,10 @@ public class GraphPanel extends JPanel {
                 boolean isLoop = (i == j);
                 int edgeIdx = 0;
                 for (Edge<Vertex<String, Integer>, Integer, Integer> e : edges) {
-                    boolean hover = (e == hoverEdge);
+                    boolean isHover = (e == hoverEdge);
+                    boolean isIterator = (e == iteratorEdge);
                     if (isLoop) {
-                        drawLoop(g2, p1, e, hover);
+                        drawLoop(g2, p1, e, isIterator, isHover);
                     } else {
                         Vertex<String, Integer> v2 = graph.getVertex(j);
                         Point p2 = vertexPositions.get(v2);
@@ -319,7 +351,7 @@ public class GraphPanel extends JPanel {
                         if (edges.size() > 1) {
                             offset = (edgeIdx - (edges.size() - 1) / 2.0) * 6;
                         }
-                        drawEdge(g2, p1, p2, e, offset, hover);
+                        drawEdge(g2, p1, p2, e, offset, isIterator, isHover);
                     }
                     edgeIdx++;
                 }
@@ -330,12 +362,20 @@ public class GraphPanel extends JPanel {
         for (var entry : vertexPositions.entrySet()) {
             Vertex<String, Integer> v = entry.getKey();
             Point p = entry.getValue();
-            if (v == hoverVertex) {
-                g2.setColor(new Color(255, 200, 150)); // highlight
+            if (v == iteratorVertex) {
+                g2.setColor(Color.BLUE);
+            } else if (v == hoverVertex) {
+                g2.setColor(new Color(255, 200, 150));
             } else {
                 g2.setColor(Color.LIGHT_GRAY);
             }
             g2.fillOval(p.x - VERTEX_RADIUS, p.y - VERTEX_RADIUS, 2 * VERTEX_RADIUS, 2 * VERTEX_RADIUS);
+            if (v == iteratorVertex) {
+                g2.setColor(Color.BLUE);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawOval(p.x - VERTEX_RADIUS, p.y - VERTEX_RADIUS, 2 * VERTEX_RADIUS, 2 * VERTEX_RADIUS);
+                g2.setStroke(new BasicStroke(1));
+            }
             g2.setColor(Color.BLACK);
             g2.drawOval(p.x - VERTEX_RADIUS, p.y - VERTEX_RADIUS, 2 * VERTEX_RADIUS, 2 * VERTEX_RADIUS);
             String name = v.getName();
@@ -349,9 +389,11 @@ public class GraphPanel extends JPanel {
 
     private void drawEdge(Graphics2D g2, Point p1, Point p2,
                           Edge<Vertex<String, Integer>, Integer, Integer> e,
-                          double offset, boolean hover) {
-        // Set color and stroke
-        if (hover) {
+                          double offset, boolean isIterator, boolean isHover) {
+        if (isIterator) {
+            g2.setColor(Color.BLUE);
+            g2.setStroke(new BasicStroke(3));
+        } else if (isHover) {
             g2.setColor(Color.RED);
             g2.setStroke(new BasicStroke(3));
         } else {
@@ -375,7 +417,7 @@ public class GraphPanel extends JPanel {
         }
 
         g2.drawLine(x1, y1, x2, y2);
-        if (graph.isDirected()) drawArrow(g2, new Point(x1, y1), new Point(x2, y2), hover);
+        if (graph.isDirected()) drawArrow(g2, new Point(x1, y1), new Point(x2, y2), isIterator || isHover);
 
         if (e.isWeightSet()) {
             int mx = (x1 + x2) / 2;
@@ -388,14 +430,17 @@ public class GraphPanel extends JPanel {
         g2.setStroke(new BasicStroke(1));
     }
 
-    private void drawLoop(Graphics2D g2, Point p,
+private void drawLoop(Graphics2D g2, Point p,
                           Edge<Vertex<String, Integer>, Integer, Integer> e,
-                          boolean hover) {
+                          boolean isIterator, boolean isHover) {
         int loopRad = VERTEX_RADIUS;
         int loopX = p.x + VERTEX_RADIUS;
         int loopY = p.y - VERTEX_RADIUS - LOOP_OFFSET;
 
-        if (hover) {
+        if (isIterator) {
+            g2.setColor(Color.BLUE);
+            g2.setStroke(new BasicStroke(3));
+        } else if (isHover) {
             g2.setColor(Color.RED);
             g2.setStroke(new BasicStroke(3));
         } else {
@@ -418,7 +463,7 @@ public class GraphPanel extends JPanel {
         g2.setStroke(new BasicStroke(1));
     }
 
-    private void drawArrow(Graphics2D g2, Point from, Point to, boolean hover) {
+    private void drawArrow(Graphics2D g2, Point from, Point to, boolean isHighlighted) {
         int arrowSize = 8;
         double angle = Math.atan2(to.y - from.y, to.x - from.x);
         int xArrow = (int) (to.x - VERTEX_RADIUS * Math.cos(angle));

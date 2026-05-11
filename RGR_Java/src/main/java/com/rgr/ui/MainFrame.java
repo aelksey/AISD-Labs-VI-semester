@@ -194,9 +194,12 @@ public class MainFrame extends JFrame {
             try {
                 Edge<Vertex<String, Integer>, Integer, Integer> e = graph.insertEdge(graph.getVertex(from), graph.getVertex(to));
                 if (e != null) {
-                    e.setWeight(weight);
+                    if (weight != 0) {
+                        e.setWeight(weight);
+                    }
                     graphPanel.repaint();
-                    resultArea.setText("Добавлено ребро " + from + "->" + to + " вес=" + weight);
+                    String weightInfo = weight != 0 ? " вес=" + weight : " (без веса)";
+                    resultArea.setText("Добавлено ребро " + from + "->" + to + weightInfo);
                 } else {
                     resultArea.setText("Ребро уже существует");
                 }

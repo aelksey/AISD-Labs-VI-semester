@@ -1,7 +1,9 @@
 package com.rgr.ui;
 
 import com.rgr.model.*;
-import com.rgr.tasks.*;
+import com.rgr.tasks.EulerCycleTask;
+import com.rgr.tasks.EulerCycleTask.CycleEdge;
+import com.rgr.tasks.DijkstraRadiusTask;
 
 import javax.swing.*;
 import java.awt.*;
@@ -334,9 +336,11 @@ public class MainFrame extends JFrame {
         EulerCycleTask<Vertex<String, Integer>, String, Integer, Integer, Integer> task = new EulerCycleTask<>(copy);
         if (task.isValid()) {
             var cycle = task.result();
-            StringBuilder sb = new StringBuilder("Эйлеров цикл (список рёбер):\n");
-            for (var e : cycle) {
-                sb.append(e.getSource().getName()).append(" -> ").append(e.getTarget().getName()).append("\n");
+            StringBuilder sb = new StringBuilder("Эйлеров цикл (двухпроходной, " + cycle.size() + " рёбер):\n");
+            for (var ce : cycle) {
+                String direction = ce.isReverse ? " ← " : " → ";
+                sb.append(ce.edge.getSource().getName()).append(direction).append(ce.edge.getTarget().getName());
+                sb.append(" (").append(ce.isReverse ? "обратный" : "прямой").append(")\n");
             }
             resultArea.setText(sb.toString());
         } else {

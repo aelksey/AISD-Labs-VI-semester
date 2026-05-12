@@ -6,8 +6,18 @@ import java.util.*;
 
 public class EulerCycleTask<V extends Vertex<K, D>, K, D, W, ED> {
     private Graph<V, K, D, W, ED> graph;
-    private List<Edge<V, W, ED>> cycle;
+    private List<Object> cycle;
     private boolean valid;
+
+    public static class CycleEdge<V, W, ED> {
+        public final Edge<V, W, ED> edge;
+        public final boolean isReverse;
+
+        public CycleEdge(Edge<V, W, ED> edge, boolean isReverse) {
+            this.edge = edge;
+            this.isReverse = isReverse;
+        }
+    }
 
     public EulerCycleTask(Graph<V, K, D, W, ED> g) {
         set(g);
@@ -24,31 +34,32 @@ public class EulerCycleTask<V extends Vertex<K, D>, K, D, W, ED> {
         restart();
     }
 
+    @SuppressWarnings("unchecked")
     public void restart() {
         valid = false;
         cycle = new ArrayList<>();
         if (graph.isDirected()) return;
-        // Check all vertices even degree and connectivity
         for (V v : graph.getVertices()) {
             int degree = 0;
             Graph<V, K, D, W, ED>.OutgoingEdgeIterator it = graph.new OutgoingEdgeIterator(v);
             while (it.hasNext()) { it.next(); degree++; }
             if (degree % 2 != 0) return;
         }
-        // Check connectivity (simple DFS)
         if (graph.V() == 0) return;
         Set<V> visited = new HashSet<>();
         dfs(graph.getVertex(0), visited);
         if (visited.size() != graph.V()) return;
-        // Build Eulerian cycle using Hierholzer's algorithm (two-pass)
+
         Map<Edge<V, W, ED>, Boolean> used = new HashMap<>();
         for (V v : graph.getVertices()) {
             Graph<V, K, D, W, ED>.OutgoingEdgeIterator it = graph.new OutgoingEdgeIterator(v);
             while (it.hasNext()) used.put(it.next(), false);
         }
+
         Deque<V> stack = new ArrayDeque<>();
-        List<Edge<V, W, ED>> cycleEdges = new ArrayList<>();
+        List<Edge<V, W, ED>> forwardEdges = new ArrayList<>();
         stack.push(graph.getVertex(0));
+
         while (!stack.isEmpty()) {
             V u = stack.peek();
             Graph<V, K, D, W, ED>.OutgoingEdgeIterator it = graph.new OutgoingEdgeIterator(u);
@@ -62,29 +73,24 @@ public class EulerCycleTask<V extends Vertex<K, D>, K, D, W, ED> {
             }
             if (e != null) {
                 used.put(e, true);
-                V next = e.getTarget() == u ? e.getSource() : e.getTarget(); // undirected
+                V next = e.getTarget() == u ? e.getSource() : e.getTarget();
+                forwardEdges.add(e);
                 stack.push(next);
             } else {
                 stack.pop();
-                if (!stack.isEmpty()) {
-                    V prev = stack.peek();
-                    Edge<V, W, ED> backEdge = null;
-                    Graph<V, K, D, W, ED>.OutgoingEdgeIterator backIt = graph.new OutgoingEdgeIterator(prev);
-                    while (backIt.hasNext()) {
-                        Edge<V, W, ED> cand = backIt.next();
-                        if ((cand.getSource() == prev && cand.getTarget() == u) ||
-                            (cand.getTarget() == prev && cand.getSource() == u)) {
-                            backEdge = cand;
-                            break;
-                        }
-                    }
-                    if (backEdge != null) cycleEdges.add(backEdge);
-                }
             }
         }
-        if (cycleEdges.size() == graph.E()) {
+
+        if (forwardEdges.size() == graph.E()) {
             valid = true;
-            cycle = cycleEdges;
+            List<CycleEdge<V, W, ED>> twoPassCycle = new ArrayList<>();
+            for (Edge<V, W, ED> e : forwardEdges) {
+                twoPassCycle.add(new CycleEdge<>(e, false));
+            }
+            for (int i = forwardEdges.size() - 1; i >= 0; i--) {
+                twoPassCycle.add(new CycleEdge<>(forwardEdges.get(i), true));
+            }
+            cycle = (List<Object>) (List<?>) twoPassCycle;
         }
     }
 
@@ -98,8 +104,12 @@ public class EulerCycleTask<V extends Vertex<K, D>, K, D, W, ED> {
         }
     }
 
-    public List<Edge<V, W, ED>> result() {
-        return Collections.unmodifiableList(cycle);
+    public List<CycleEdge<V, W, ED>> result() {
+        List<CycleEdge<V, W, ED>> typedCycle = new ArrayList<>();
+        for (Object obj : cycle) {
+            typedCycle.add((CycleEdge<V, W, ED>) obj);
+        }
+        return typedCycle;
     }
 
     public boolean isValid() { return valid; }
